@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://www.zhaodi.top:8080/"/>
-  <updated>2021-02-26T05:54:49.000Z</updated>
+  <updated>2021-03-01T07:57:38.000Z</updated>
   <id>http://www.zhaodi.top:8080/</id>
   
   <author>
@@ -17,6 +17,27 @@
   <generator uri="http://hexo.io/">Hexo</generator>
   
   <entry>
+    <title>Docker哨兵模式集群部署Redis</title>
+    <link href="http://www.zhaodi.top:8080/2021/03/01/Docker%E5%93%A8%E5%85%B5%E6%A8%A1%E5%BC%8F%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2Redis/"/>
+    <id>http://www.zhaodi.top:8080/2021/03/01/Docker哨兵模式集群部署Redis/</id>
+    <published>2021-03-01T07:57:38.000Z</published>
+    <updated>2021-03-01T07:57:38.000Z</updated>
+    
+    <summary type="html">
+    
+      &lt;!-- build time:Mon Mar 01 2021 16:22:29 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;Docker哨兵模式集群部署Redis&lt;/blockquote&gt;
+    
+    </summary>
+    
+    
+    
+      <category term="Docker" scheme="http://www.zhaodi.top:8080/tags/Docker/"/>
+    
+      <category term="Keepalived" scheme="http://www.zhaodi.top:8080/tags/Keepalived/"/>
+    
+  </entry>
+  
+  <entry>
     <title>WebRTC</title>
     <link href="http://www.zhaodi.top:8080/2021/02/26/WebRTC/"/>
     <id>http://www.zhaodi.top:8080/2021/02/26/WebRTC/</id>
@@ -25,7 +46,7 @@
     
     <summary type="html">
     
-      &lt;!-- build time:Mon Mar 01 2021 15:17:11 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;WebRTC实现视频会议&lt;/blockquote&gt;
+      &lt;!-- build time:Mon Mar 01 2021 16:22:05 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;WebRTC实现视频会议&lt;/blockquote&gt;
     
     </summary>
     
@@ -40,6 +61,27 @@
   </entry>
   
   <entry>
+    <title>Docker安装MinIO</title>
+    <link href="http://www.zhaodi.top:8080/2021/02/01/Docker%E5%AE%89%E8%A3%85MinIO/"/>
+    <id>http://www.zhaodi.top:8080/2021/02/01/Docker安装MinIO/</id>
+    <published>2021-02-01T08:24:12.000Z</published>
+    <updated>2021-03-01T08:24:12.000Z</updated>
+    
+    <summary type="html">
+    
+      &lt;!-- build time:Mon Mar 01 2021 16:29:50 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;Docker安装MinIO&lt;/blockquote&gt;
+    
+    </summary>
+    
+    
+    
+      <category term="Docker" scheme="http://www.zhaodi.top:8080/tags/Docker/"/>
+    
+      <category term="MinIO" scheme="http://www.zhaodi.top:8080/tags/MinIO/"/>
+    
+  </entry>
+  
+  <entry>
     <title>离线部署PM2</title>
     <link href="http://www.zhaodi.top:8080/2020/12/03/%E7%A6%BB%E7%BA%BF%E9%83%A8%E7%BD%B2PM2/"/>
     <id>http://www.zhaodi.top:8080/2020/12/03/离线部署PM2/</id>
@@ -48,7 +90,7 @@
     
     <summary type="html">
     
-      &lt;!-- build time:Mon Mar 01 2021 14:01:35 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;离线安装PM2管理项目&lt;/blockquote&gt;
+      &lt;!-- build time:Mon Mar 01 2021 16:04:09 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;离线安装PM2管理项目&lt;/blockquote&gt;
     
     </summary>
     
@@ -63,6 +105,27 @@
   </entry>
   
   <entry>
+    <title>Docker集群部署MongoDB</title>
+    <link href="http://www.zhaodi.top:8080/2020/10/21/Docker%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2MongoDB/"/>
+    <id>http://www.zhaodi.top:8080/2020/10/21/Docker集群部署MongoDB/</id>
+    <published>2020-10-21T04:26:46.000Z</published>
+    <updated>2020-10-25T10:12:22.000Z</updated>
+    
+    <summary type="html">
+    
+      &lt;!-- build time:Mon Mar 01 2021 16:29:50 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;Docker集群部署MongoDB&lt;/blockquote&gt;
+    
+    </summary>
+    
+    
+    
+      <category term="Docker" scheme="http://www.zhaodi.top:8080/tags/Docker/"/>
+    
+      <category term="MongoDB" scheme="http://www.zhaodi.top:8080/tags/MongoDB/"/>
+    
+  </entry>
+  
+  <entry>
     <title>Nginx添加模块</title>
     <link href="http://www.zhaodi.top:8080/2020/09/16/Nginx%E6%B7%BB%E5%8A%A0%E6%A8%A1%E5%9D%97/"/>
     <id>http://www.zhaodi.top:8080/2020/09/16/Nginx添加模块/</id>
@@ -71,7 +134,7 @@
     
     <summary type="html">
     
-      &lt;!-- build time:Mon Mar 01 2021 14:01:35 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;Nginx添加模块&lt;/blockquote&gt;
+      &lt;!-- build time:Mon Mar 01 2021 16:04:09 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;Nginx添加模块&lt;/blockquote&gt;
     
     </summary>
     
@@ -92,7 +155,7 @@
     
     <summary type="html">
     
-      &lt;!-- build time:Mon Mar 01 2021 14:01:35 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;Nginx代理Kafka&lt;/blockquote&gt;
+      &lt;!-- build time:Mon Mar 01 2021 16:04:09 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;Nginx代理Kafka&lt;/blockquote&gt;
     
     </summary>
     
@@ -107,6 +170,52 @@
   </entry>
   
   <entry>
+    <title>安装Turn服务器</title>
+    <link href="http://www.zhaodi.top:8080/2020/08/01/%E5%AE%89%E8%A3%85Turn%E6%9C%8D%E5%8A%A1%E5%99%A8/"/>
+    <id>http://www.zhaodi.top:8080/2020/08/01/安装Turn服务器/</id>
+    <published>2020-08-01T08:26:03.000Z</published>
+    <updated>2021-03-01T08:26:03.000Z</updated>
+    
+    <summary type="html">
+    
+      &lt;!-- build time:Mon Mar 01 2021 16:29:50 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;在使用WebRTC时使用到的一项内网穿透技术&lt;/blockquote&gt;
+    
+    </summary>
+    
+    
+    
+      <category term="WebRTC" scheme="http://www.zhaodi.top:8080/tags/WebRTC/"/>
+    
+      <category term="Turn" scheme="http://www.zhaodi.top:8080/tags/Turn/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Docker搭建高可用Haproxy+Keepalived+Mysql集群</title>
+    <link href="http://www.zhaodi.top:8080/2020/06/06/Docker%E6%90%AD%E5%BB%BA%E9%AB%98%E5%8F%AF%E7%94%A8Haproxy-Keepalived-Mysql%E9%9B%86%E7%BE%A4/"/>
+    <id>http://www.zhaodi.top:8080/2020/06/06/Docker搭建高可用Haproxy-Keepalived-Mysql集群/</id>
+    <published>2020-06-06T08:08:35.000Z</published>
+    <updated>2020-08-01T08:08:35.000Z</updated>
+    
+    <summary type="html">
+    
+      &lt;!-- build time:Mon Mar 01 2021 16:29:50 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;Docker搭建高可用Haproxy+Keepalived+Mysql集群&lt;/blockquote&gt;
+    
+    </summary>
+    
+    
+    
+      <category term="Docker" scheme="http://www.zhaodi.top:8080/tags/Docker/"/>
+    
+      <category term="Mysql" scheme="http://www.zhaodi.top:8080/tags/Mysql/"/>
+    
+      <category term="Haproxy" scheme="http://www.zhaodi.top:8080/tags/Haproxy/"/>
+    
+      <category term="Keepalived" scheme="http://www.zhaodi.top:8080/tags/Keepalived/"/>
+    
+  </entry>
+  
+  <entry>
     <title>docker部署gitlab集成自动化构建</title>
     <link href="http://www.zhaodi.top:8080/2020/01/13/docker%E9%83%A8%E7%BD%B2gitlab%E9%9B%86%E6%88%90%E8%87%AA%E5%8A%A8%E5%8C%96%E6%9E%84%E5%BB%BA/"/>
     <id>http://www.zhaodi.top:8080/2020/01/13/docker部署gitlab集成自动化构建/</id>
@@ -115,15 +224,15 @@
     
     <summary type="html">
     
-      &lt;!-- build time:Mon Mar 01 2021 14:01:35 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;使用gitlab搭建内网代码仓库&lt;/blockquote&gt;
+      &lt;!-- build time:Mon Mar 01 2021 16:04:09 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;使用gitlab搭建内网代码仓库&lt;/blockquote&gt;
     
     </summary>
     
     
     
-      <category term="Linux" scheme="http://www.zhaodi.top:8080/tags/Linux/"/>
-    
       <category term="Docker" scheme="http://www.zhaodi.top:8080/tags/Docker/"/>
+    
+      <category term="Linux" scheme="http://www.zhaodi.top:8080/tags/Linux/"/>
     
       <category term="运维" scheme="http://www.zhaodi.top:8080/tags/%E8%BF%90%E7%BB%B4/"/>
     
@@ -140,7 +249,7 @@
     
     <summary type="html">
     
-      &lt;!-- build time:Mon Mar 01 2021 14:01:35 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;介绍IPV6基础知识,以及在NETCore项目应用&lt;/blockquote&gt;
+      &lt;!-- build time:Mon Mar 01 2021 16:04:09 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;介绍IPV6基础知识,以及在NETCore项目应用&lt;/blockquote&gt;
     
     </summary>
     
@@ -161,7 +270,7 @@
     
     <summary type="html">
     
-      &lt;!-- build time:Mon Mar 01 2021 14:01:35 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;Linux安装Redis&lt;/blockquote&gt;
+      &lt;!-- build time:Mon Mar 01 2021 16:04:09 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;Linux安装Redis&lt;/blockquote&gt;
     
     </summary>
     
@@ -184,7 +293,7 @@
     
     <summary type="html">
     
-      &lt;!-- build time:Mon Mar 01 2021 14:01:35 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;离线安装gcc&lt;/blockquote&gt;
+      &lt;!-- build time:Mon Mar 01 2021 16:04:09 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;离线安装gcc&lt;/blockquote&gt;
     
     </summary>
     
@@ -211,7 +320,7 @@
     
     <summary type="html">
     
-      &lt;!-- build time:Mon Mar 01 2021 14:01:35 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;安装Nginx过程,以及对Vue部署的配置&lt;/blockquote&gt;
+      &lt;!-- build time:Mon Mar 01 2021 16:04:09 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;安装Nginx过程,以及对Vue部署的配置&lt;/blockquote&gt;
     
     </summary>
     
@@ -234,15 +343,15 @@
     
     <summary type="html">
     
-      &lt;!-- build time:Mon Mar 01 2021 14:01:35 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;安装Mariadb&lt;/blockquote&gt;
+      &lt;!-- build time:Mon Mar 01 2021 16:04:09 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;安装Mariadb&lt;/blockquote&gt;
     
     </summary>
     
     
     
-      <category term="Linux" scheme="http://www.zhaodi.top:8080/tags/Linux/"/>
-    
       <category term="Mariadb" scheme="http://www.zhaodi.top:8080/tags/Mariadb/"/>
+    
+      <category term="Linux" scheme="http://www.zhaodi.top:8080/tags/Linux/"/>
     
       <category term="安装Mariadb" scheme="http://www.zhaodi.top:8080/tags/%E5%AE%89%E8%A3%85Mariadb/"/>
     
@@ -259,17 +368,17 @@
     
     <summary type="html">
     
-      &lt;!-- build time:Mon Mar 01 2021 14:01:35 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;Docker集群部署Mariadb&lt;/blockquote&gt;
+      &lt;!-- build time:Mon Mar 01 2021 16:04:09 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;Docker集群部署Mariadb&lt;/blockquote&gt;
     
     </summary>
     
     
     
-      <category term="Linux" scheme="http://www.zhaodi.top:8080/tags/Linux/"/>
-    
       <category term="Docker" scheme="http://www.zhaodi.top:8080/tags/Docker/"/>
     
       <category term="Mariadb" scheme="http://www.zhaodi.top:8080/tags/Mariadb/"/>
+    
+      <category term="Linux" scheme="http://www.zhaodi.top:8080/tags/Linux/"/>
     
       <category term="Docker集群部署Mariadb" scheme="http://www.zhaodi.top:8080/tags/Docker%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2Mariadb/"/>
     
@@ -284,7 +393,7 @@
     
     <summary type="html">
     
-      &lt;!-- build time:Mon Mar 01 2021 14:01:35 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;ffmpeg+nginx实现rtsp转rtmp&lt;/blockquote&gt;
+      &lt;!-- build time:Mon Mar 01 2021 16:04:09 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;ffmpeg+nginx实现rtsp转rtmp&lt;/blockquote&gt;
     
     </summary>
     
@@ -311,15 +420,15 @@
     
     <summary type="html">
     
-      &lt;!-- build time:Mon Mar 01 2021 14:01:35 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;Docker&lt;/blockquote&gt;
+      &lt;!-- build time:Mon Mar 01 2021 16:04:09 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;Docker&lt;/blockquote&gt;
     
     </summary>
     
     
     
-      <category term="Linux" scheme="http://www.zhaodi.top:8080/tags/Linux/"/>
-    
       <category term="Docker" scheme="http://www.zhaodi.top:8080/tags/Docker/"/>
+    
+      <category term="Linux" scheme="http://www.zhaodi.top:8080/tags/Linux/"/>
     
       <category term="运维" scheme="http://www.zhaodi.top:8080/tags/%E8%BF%90%E7%BB%B4/"/>
     
@@ -334,7 +443,7 @@
     
     <summary type="html">
     
-      &lt;!-- build time:Mon Mar 01 2021 14:01:35 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;Git基础入门, 主要介绍一些常用命令&lt;/blockquote&gt;
+      &lt;!-- build time:Mon Mar 01 2021 16:04:09 GMT+0800 (GMT+08:00) --&gt;&lt;blockquote class=&quot;blockquote-center&quot;&gt;Git基础入门, 主要介绍一些常用命令&lt;/blockquote&gt;
     
     </summary>
     
