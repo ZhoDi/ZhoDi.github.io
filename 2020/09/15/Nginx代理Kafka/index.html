@@ -1,0 +1,314 @@
+<!DOCTYPE html><html class="theme-next gemini use-motion" lang="zh-Hans"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><meta name="theme-color" content="#222"><script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script><link href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-flash.min.css" rel="stylesheet"><meta http-equiv="Cache-Control" content="no-transform"><meta http-equiv="Cache-Control" content="no-siteapp"><link href="https://cdn.bootcdn.net/ajax/libs/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet" type="text/css"><link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" type="text/css"><link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css"><link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4"><link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4"><link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4"><link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222"><meta name="keywords" content="Nginx,Kafka,Nginx代理Kafka,"><link rel="alternate" href="/atom.xml" title="小新爽肤水的博客" type="application/atom+xml"><meta name="description" content="Nginx代理Kafka"><meta property="og:type" content="article"><meta property="og:title" content="Nginx代理Kafka"><meta property="og:url" content="https://www.zhaodi.top/2020/09/15/Nginx%E4%BB%A3%E7%90%86Kafka/index.html"><meta property="og:site_name" content="小新爽肤水的博客"><meta property="og:description" content="Nginx代理Kafka"><meta property="og:locale"><meta property="article:published_time" content="2020-09-15T10:05:49.000Z"><meta property="article:modified_time" content="2020-09-15T10:05:49.000Z"><meta property="article:author" content="ZhoDi"><meta property="article:tag" content="Nginx"><meta property="article:tag" content="Kafka"><meta property="article:tag" content="Nginx代理Kafka"><meta name="twitter:card" content="summary"><script type="text/javascript" id="hexo.configurations">var NexT=window.NexT||{},CONFIG={root:"",scheme:"Gemini",version:"5.1.4",sidebar:{position:"left",display:"post",offset:12,b2t:!0,scrollpercent:!0,onmobile:!1},fancybox:!0,tabs:!0,motion:{enable:!0,async:!0,transition:{post_block:"fadeIn",post_header:"expandIn",post_body:"fadeIn",coll_header:"expandIn",sidebar:"expandIn"}},duoshuo:{userId:"0",author:"博主"},algolia:{applicationID:"",apiKey:"",indexName:"",hits:{per_page:10},labels:{input_placeholder:"Search for Posts",hits_empty:"We didn't find any results for the search: ${query}",hits_stats:"${hits} results found in ${time} ms"}}}</script><link rel="canonical" href="https://www.zhaodi.top/2020/09/15/Nginx代理Kafka/"><title>Nginx代理Kafka | 小新爽肤水的博客</title><meta name="generator" content="Hexo 6.3.0"></head><body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans"><div class="container sidebar-position-left page-post-detail"><div class="headband"></div><header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="header-inner"><div class="site-brand-wrapper"><div class="site-meta"><div class="custom-logo-site-title"><a href="/" class="brand" rel="start"><span class="logo-line-before"><i></i></span> <span class="site-title">小新爽肤水的博客</span> <span class="logo-line-after"><i></i></span></a></div><h1 class="site-subtitle" itemprop="description">纵使上线又怎样，朝令改，夕断肠</h1></div><div class="site-nav-toggle"><button><span class="btn-bar"></span> <span class="btn-bar"></span> <span class="btn-bar"></span></button></div></div><nav class="site-nav"><ul id="menu" class="menu"><li class="menu-item menu-item-home"><a href="/%20" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i><br>首页</a></li><li class="menu-item menu-item-about"><a href="/about/%20" rel="section"><i class="menu-item-icon fa fa-fw fa-user"></i><br>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/%20" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i><br>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/%20" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i><br>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/%20" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i><br>归档</a></li><li class="menu-item menu-item-search"><a href="javascript:;" class="popup-trigger"><i class="menu-item-icon fa fa-search fa-fw"></i><br>搜索</a></li></ul><div class="site-search"><div class="popup search-popup local-search-popup"><div class="local-search-header clearfix"><span class="search-icon"><i class="fa fa-search"></i> </span><span class="popup-btn-close"><i class="fa fa-times-circle"></i></span><div class="local-search-input-wrapper"><input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input"></div></div><div id="local-search-result"></div></div></div></nav></div></header><main id="main" class="main"><div class="main-inner"><div class="content-wrap"><div id="content" class="content"><div id="posts" class="posts-expand"><article class="post post-type-normal" itemscope itemtype="http://schema.org/Article"><div class="post-block"><link itemprop="mainEntityOfPage" href="https://www.zhaodi.top/2020/09/15/Nginx%E4%BB%A3%E7%90%86Kafka/"><span hidden itemprop="author" itemscope itemtype="http://schema.org/Person"><meta itemprop="name" content=""><meta itemprop="description" content=""><meta itemprop="image" content="/images/avatar.jpg"></span><span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization"><meta itemprop="name" content="小新爽肤水的博客"></span><header class="post-header"><h2 class="post-title" itemprop="name headline">Nginx代理Kafka</h2><div class="post-meta"><span class="post-time"><span class="post-meta-item-icon"><i class="fa fa-calendar-o"></i> </span><span class="post-meta-item-text">发表于</span> <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-09-15T18:05:49+08:00">2020-09-15</time></span><div class="post-wordcount"><span class="post-meta-item-icon"><i class="fa fa-file-word-o"></i> </span><span class="post-meta-item-text">字数统计&#58;</span> <span title="字数统计">682 </span><span class="post-meta-divider">|</span> <span class="post-meta-item-icon"><i class="fa fa-clock-o"></i> </span><span class="post-meta-item-text">阅读时长 &asymp;</span> <span title="阅读时长">3</span></div></div></header><div class="post-body" itemprop="articleBody"><blockquote class="blockquote-center">Nginx代理Kafka</blockquote><span id="more"></span><div class="note info"><h1 id="一、第一种方式：ngx-kafka-module"><a href="#一、第一种方式：ngx-kafka-module" class="headerlink" title="一、第一种方式：ngx_kafka_module"></a>一、第一种方式：ngx_kafka_module</h1></div><p>这种方式主要是能够通过http给kafka发送消息</p><h2 id="安装依赖"><a href="#安装依赖" class="headerlink" title="安装依赖"></a>安装依赖</h2><ul><li><a target="_blank" rel="noopener" href="https://github.com/edenhill/librdkafka">librdkafka</a></li></ul><h3 id="在线安装"><a href="#在线安装" class="headerlink" title="在线安装"></a>在线安装</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Mac OSX</span></span><br><span class="line">brew install librdkafka</span><br><span class="line"><span class="comment"># Debian和Ubuntu</span></span><br><span class="line">apt install librdkafka-dev</span><br><span class="line"><span class="comment"># RedHat，CentOS，Fedora</span></span><br><span class="line">yum install librdkafka-devel</span><br></pre></td></tr></table></figure><h3 id="离线安装"><a href="#离线安装" class="headerlink" title="离线安装"></a>离线安装</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 下载源码包并上传</span></span><br><span class="line">https://github.com/edenhill/librdkafka/releases</span><br><span class="line"></span><br><span class="line"><span class="comment"># 解压进入目录</span></span><br><span class="line">tar -zxvf librdkafka-1.5.0.tar.gz</span><br><span class="line"><span class="built_in">cd</span> librdkafka-1.5.0</span><br><span class="line"></span><br><span class="line"><span class="comment"># 编译安装</span></span><br><span class="line"><span class="comment"># 可通过--prefix=/home/librdkafka指定目录）</span></span><br><span class="line"><span class="comment"># 默认在</span></span><br><span class="line">./configure</span><br><span class="line"> make &amp;&amp; make install</span><br></pre></td></tr></table></figure><h2 id="配置链接库"><a href="#配置链接库" class="headerlink" title="配置链接库"></a>配置链接库</h2><p><strong>在线安装不需要这一步</strong></p><p>make &amp;&amp; make install默认是把动态库安装到&#x2F;usr&#x2F;local&#x2F;lib下的，所以在Linux的默认共享库路径&#x2F;lib和&#x2F;usr&#x2F;lib下找不到。因此添加的library如果不在&#x2F;lib和&#x2F;usr&#x2F;lib里面的话，就需要往&#x2F;etc&#x2F;ld.so.conf文件追加library所在的路径，然后重新调用下ldconfig命令即可。</p><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> <span class="string">&quot;/usr/local/lib&quot;</span> &gt;&gt; /etc/ld.so.conf</span><br><span class="line">ldconfig</span><br></pre></td></tr></table></figure><h2 id="安装Nginx并添加ngx-kafka-module模块"><a href="#安装Nginx并添加ngx-kafka-module模块" class="headerlink" title="安装Nginx并添加ngx_kafka_module模块"></a>安装Nginx并添加ngx_kafka_module模块</h2><h3 id="先克隆源码"><a href="#先克隆源码" class="headerlink" title="先克隆源码"></a>先克隆源码</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 放在/usr/local/src一会编译nginx会用到</span></span><br><span class="line"><span class="built_in">cd</span> /usr/local/src</span><br><span class="line">git <span class="built_in">clone</span> https://github.com/brg-liuwei/ngx_kafka_module</span><br></pre></td></tr></table></figure><h3 id="安装Nginx"><a href="#安装Nginx" class="headerlink" title="安装Nginx"></a>安装Nginx</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 下载</span></span><br><span class="line">yum -y install gcc zlib zlib-devel pcre-devel openssl openssl-devel</span><br><span class="line"><span class="built_in">mkdir</span> /usr/local/nginx</span><br><span class="line"><span class="built_in">mkdir</span> /home/nginx</span><br><span class="line"><span class="built_in">cd</span> /home/nginx</span><br><span class="line">wget -c http://nginx.org/download/nginx-1.16.1.tar.gz</span><br><span class="line">tar -zxvf nginx-1.16.1.tar.gz</span><br><span class="line"><span class="built_in">cd</span> nginx-1.16.1</span><br><span class="line"></span><br><span class="line"><span class="comment"># 编译安装</span></span><br><span class="line">./configure --prefix=/usr/local/nginx --with-http_ssl_module --add-dynamic=/usr/local/src/ngx_kafka_module</span><br><span class="line"></span><br><span class="line">make &amp;&amp; make install</span><br><span class="line"></span><br><span class="line"><span class="comment"># 启动</span></span><br><span class="line">/usr/local/nginx/sbin/nginx</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 如果报错请看下一步 复制objs/ngx_http_kafka_module.so</span></span><br></pre></td></tr></table></figure><h3 id="复制objs-ngx-http-kafka-module-so"><a href="#复制objs-ngx-http-kafka-module-so" class="headerlink" title="复制objs&#x2F;ngx_http_kafka_module.so"></a>复制objs&#x2F;ngx_http_kafka_module.so</h3><blockquote><p>上一步报错才需要执行复制操作<br>可以先查看&#x2F;usr&#x2F;local&#x2F;nginx&#x2F;modules 是否存在模块，不存在再复制<br>为现有nginx添加模块时，module不会自动创建并复制模块</p></blockquote><p>配置完kafka启动nginx时发现找不到ngx_http_kafka_module.so，所以我们手动复制一下</p><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">mkdir</span> /usr/local/nginx/modules</span><br><span class="line"></span><br><span class="line">\<span class="built_in">cp</span> ./objs/ngx_http_kafka_module.so /usr/local/nginx/modules</span><br></pre></td></tr></table></figure><h3 id="Kafka的Nginx配置"><a href="#Kafka的Nginx配置" class="headerlink" title="Kafka的Nginx配置"></a>Kafka的Nginx配置</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">worker_processes  1;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 动态安装的模块需要引入</span></span><br><span class="line">load_module <span class="string">&quot;modules/ngx_http_kafka_module.so&quot;</span>;</span><br><span class="line"></span><br><span class="line">events &#123;</span><br><span class="line">    worker_connections  1024;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">http &#123;</span><br><span class="line">    include       mime.types;</span><br><span class="line">    default_type  application/octet-stream;</span><br><span class="line">    sendfile        on;</span><br><span class="line">    keepalive_timeout  65;</span><br><span class="line"></span><br><span class="line">    kafka;</span><br><span class="line">    kafka_broker_list 192.168.1.140:9092;</span><br><span class="line"></span><br><span class="line">    server &#123;</span><br><span class="line">        listen       9032;</span><br><span class="line">        server_name  192.168.1.140;</span><br><span class="line">        location = /kafka/server-per-final &#123;</span><br><span class="line">                kafka_topic server-per-final;</span><br><span class="line">        &#125;</span><br><span class="line">        error_page   500 502 503 504  /50x.html;</span><br><span class="line">        location = /50x.html &#123;</span><br><span class="line">            root   html;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><div class="note info"><h1 id="二、第二种方式：配置stream模块"><a href="#二、第二种方式：配置stream模块" class="headerlink" title="二、第二种方式：配置stream模块"></a>二、第二种方式：配置stream模块</h1></div><p>这种方式主要实现整个kafka消息的代理转发，我们此次项目就使用这种方式</p><h2 id="安装Nginx-1"><a href="#安装Nginx-1" class="headerlink" title="安装Nginx"></a>安装Nginx</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 安装</span></span><br><span class="line">yum -y install gcc zlib zlib-devel pcre-devel openssl openssl-devel</span><br><span class="line"><span class="built_in">mkdir</span> /usr/local/nginx</span><br><span class="line"><span class="built_in">mkdir</span> /home/nginx</span><br><span class="line"><span class="built_in">cd</span> /home/nginx</span><br><span class="line">wget -c http://nginx.org/download/nginx-1.16.1.tar.gz</span><br><span class="line">tar -zxvf nginx-1.16.1.tar.gz</span><br><span class="line"><span class="built_in">cd</span> nginx-1.16.1</span><br><span class="line"></span><br><span class="line">./configure --prefix=/usr/local/nginx --with-http_ssl_module --with-stream</span><br><span class="line">make &amp;&amp; make install</span><br><span class="line"></span><br><span class="line"><span class="comment"># 启动</span></span><br><span class="line">/usr/local/nginx/sbin/nginx</span><br><span class="line"></span><br></pre></td></tr></table></figure><h2 id="Kafka的Nginx配置-1"><a href="#Kafka的Nginx配置-1" class="headerlink" title="Kafka的Nginx配置"></a>Kafka的Nginx配置</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">stream &#123;</span><br><span class="line">    upstream kafka &#123;</span><br><span class="line">        server 192.168.1.140:9092 weight=1;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    server &#123;</span><br><span class="line">        listen 9032;</span><br><span class="line">        proxy_connect_timeout 1s;</span><br><span class="line">        proxy_timeout 6s;</span><br><span class="line">        proxy_pass kafka;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div><div><ul class="post-copyright"><li class="post-copyright-author"><strong>本文作者：</strong> ZhoDi</li><li class="post-copyright-link"><strong>本文链接：</strong> <a href="https://www.zhaodi.top/2020/09/15/Nginx%E4%BB%A3%E7%90%86Kafka/" title="Nginx代理Kafka">https://www.zhaodi.top/2020/09/15/Nginx%E4%BB%A3%E7%90%86Kafka/</a></li><li class="post-copyright-license"><strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/" rel="external nofollow" target="_blank">CC BY-NC-SA 3.0</a> 许可协议。转载请注明出处！</li></ul></div><footer class="post-footer"><div class="post-tags"><a href="/tags/Nginx/" rel="tag"><i class="fa fa-tag"></i> Nginx</a> <a href="/tags/Kafka/" rel="tag"><i class="fa fa-tag"></i> Kafka</a> <a href="/tags/Nginx%E4%BB%A3%E7%90%86Kafka/" rel="tag"><i class="fa fa-tag"></i> Nginx代理Kafka</a></div><div class="post-widgets"><div id="needsharebutton-postbottom"><span class="btn"><i class="fa fa-share-alt" aria-hidden="true"></i></span></div></div><div class="post-nav"><div class="post-nav-next post-nav-item"><a href="/2020/01/13/docker%E9%83%A8%E7%BD%B2gitlab%E9%9B%86%E6%88%90%E8%87%AA%E5%8A%A8%E5%8C%96%E6%9E%84%E5%BB%BA/" rel="next" title="docker部署gitlab集成自动化构建"><i class="fa fa-chevron-left"></i> docker部署gitlab集成自动化构建</a></div><span class="post-nav-divider"></span><div class="post-nav-prev post-nav-item"><a href="/2020/09/16/Nginx%E6%B7%BB%E5%8A%A0%E6%A8%A1%E5%9D%97/" rel="prev" title="Nginx添加模块">Nginx添加模块 <i class="fa fa-chevron-right"></i></a></div></div></footer></div></article><div class="post-spread"></div></div></div><div class="comments" id="comments"></div></div><div class="sidebar-toggle"><div class="sidebar-toggle-line-wrap"><span class="sidebar-toggle-line sidebar-toggle-line-first"></span> <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span> <span class="sidebar-toggle-line sidebar-toggle-line-last"></span></div></div><aside id="sidebar" class="sidebar"><div class="sidebar-inner"><ul class="sidebar-nav motion-element"><li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">文章目录</li><li class="sidebar-nav-overview" data-target="site-overview-wrap">站点概览</li></ul><section class="site-overview-wrap sidebar-panel"><div class="site-overview"><div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person"><img class="site-author-image" itemprop="image" src="/images/avatar.jpg" alt=""><p class="site-author-name" itemprop="name"></p><p class="site-description motion-element" itemprop="description"></p></div><nav class="site-state motion-element"><div class="site-state-item site-state-posts"><a href="/archives/%20%7C%7C%20archive"><span class="site-state-item-count">13</span> <span class="site-state-item-name">日志</span></a></div><div class="site-state-item site-state-tags"><a href="/tags/index.html"><span class="site-state-item-count">34</span> <span class="site-state-item-name">标签</span></a></div></nav><div class="feed-link motion-element"><a href="/atom.xml" rel="alternate"><i class="fa fa-rss"></i> RSS</a></div><div class="links-of-author motion-element"><span class="links-of-author-item"><a href="http://www.zhihu.com/people/ZoDipro" target="_blank" title="知乎"><i class="fa fa-fw fa-life-ring"></i>知乎</a> </span><span class="links-of-author-item"><a href="http://weibo.com/ZoDipro" target="_blank" title="微博"><i class="fa fa-fw fa-weibo"></i>微博</a> </span><span class="links-of-author-item"><a href="https://github.com/ZhoDi" target="_blank" title="GitHub"><i class="fa fa-fw fa-github"></i>GitHub</a> </span><span class="links-of-author-item"><a href="di.zho@foxmail.com" target="_blank" title="E-Mail"><i class="fa fa-fw fa-envelope"></i>E-Mail</a></span></div></div></section><section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active"><div class="post-toc"><div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E7%AC%AC%E4%B8%80%E7%A7%8D%E6%96%B9%E5%BC%8F%EF%BC%9Angx-kafka-module"><span class="nav-number">1.</span> <span class="nav-text">一、第一种方式：ngx_kafka_module</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85%E4%BE%9D%E8%B5%96"><span class="nav-number">1.1.</span> <span class="nav-text">安装依赖</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9C%A8%E7%BA%BF%E5%AE%89%E8%A3%85"><span class="nav-number">1.1.1.</span> <span class="nav-text">在线安装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A6%BB%E7%BA%BF%E5%AE%89%E8%A3%85"><span class="nav-number">1.1.2.</span> <span class="nav-text">离线安装</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E9%93%BE%E6%8E%A5%E5%BA%93"><span class="nav-number">1.2.</span> <span class="nav-text">配置链接库</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85Nginx%E5%B9%B6%E6%B7%BB%E5%8A%A0ngx-kafka-module%E6%A8%A1%E5%9D%97"><span class="nav-number">1.3.</span> <span class="nav-text">安装Nginx并添加ngx_kafka_module模块</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%88%E5%85%8B%E9%9A%86%E6%BA%90%E7%A0%81"><span class="nav-number">1.3.1.</span> <span class="nav-text">先克隆源码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E8%A3%85Nginx"><span class="nav-number">1.3.2.</span> <span class="nav-text">安装Nginx</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%8D%E5%88%B6objs-ngx-http-kafka-module-so"><span class="nav-number">1.3.3.</span> <span class="nav-text">复制objs&#x2F;ngx_http_kafka_module.so</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Kafka%E7%9A%84Nginx%E9%85%8D%E7%BD%AE"><span class="nav-number">1.3.4.</span> <span class="nav-text">Kafka的Nginx配置</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E7%AC%AC%E4%BA%8C%E7%A7%8D%E6%96%B9%E5%BC%8F%EF%BC%9A%E9%85%8D%E7%BD%AEstream%E6%A8%A1%E5%9D%97"><span class="nav-number">2.</span> <span class="nav-text">二、第二种方式：配置stream模块</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85Nginx-1"><span class="nav-number">2.1.</span> <span class="nav-text">安装Nginx</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Kafka%E7%9A%84Nginx%E9%85%8D%E7%BD%AE-1"><span class="nav-number">2.2.</span> <span class="nav-text">Kafka的Nginx配置</span></a></li></ol></li></ol></div></div></section><div class="back-to-top"><i class="fa fa-arrow-up"></i> <span id="scrollpercent"><span>0</span>%</span></div></div></aside></div></main><footer id="footer" class="footer"><div class="footer-inner"><div class="copyright">&copy; 2015-2019 &mdash; <span itemprop="copyrightYear">2023</span> <span class="with-love"><i class="fa fa-user"></i> </span><span class="author" itemprop="copyrightHolder">ZhoDi</span> <span class="post-meta-divider">|</span> <span class="post-meta-item-icon"><i class="fa fa-area-chart"></i> </span><span class="post-meta-item-text">字数&#58;</span> <span title="字数">11.5k</span></div></div></footer></div><script type="text/javascript">"[object Function]"!==Object.prototype.toString.call(window.Promise)&&(window.Promise=null)</script><script type="text/javascript" src="https://cdn.bootcdn.net/ajax/libs/jquery/2.1.3/jquery.min.js"></script><script type="text/javascript" src="https://cdn.bootcdn.net/ajax/libs/fastclick/1.0.6/fastclick.min.js"></script><script type="text/javascript" src="https://cdn.bootcdn.net/ajax/libs/jquery_lazyload/1.9.3/jquery.lazyload.min.js"></script><script type="text/javascript" src="https://cdn.bootcdn.net/ajax/libs/velocity/1.2.3/velocity.min.js"></script><script type="text/javascript" src="https://cdn.bootcdn.net/ajax/libs/velocity/1.2.3/velocity.ui.min.js"></script><script type="text/javascript" src="https://cdn.bootcdn.net/ajax/libs/fancybox/2.1.5/jquery.fancybox.pack.js"></script><script type="text/javascript" src="https://cdn.bootcdn.net/ajax/libs/canvas-nest.js/1.0.1/canvas-nest.min.js"></script><script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script><script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script><script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script><script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script><script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script><script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script><script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script><script type="text/javascript">// Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });</script><link rel="stylesheet" href="/lib/needsharebutton/needsharebutton.css"><script src="/lib/needsharebutton/needsharebutton.js"></script><script>pbOptions={iconStyle:"box",boxForm:"horizontal",position:"bottomCenter",networks:"Weibo,Wechat,Douban,QQZone,Twitter,Facebook"},new needShareButton("#needsharebutton-postbottom",pbOptions)</script><script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({pluginRootPath:"live2dw/",pluginJsPath:"lib/",pluginModelPath:"assets/",tagMode:!1,log:!1,model:{jsonPath:"/live2dw/assets/hijiki.model.json"},display:{position:"right",width:260,height:400,hOffset:-40},mobile:{show:!0,scale:.3}})</script></body></html>

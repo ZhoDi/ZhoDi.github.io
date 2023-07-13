@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>小新爽肤水的博客</title>
+  
+  <subtitle>纵使上线又怎样，朝令改，夕断肠</subtitle>
+  <link href="https://www.zhaodi.top/atom.xml" rel="self"/>
+  
+  <link href="https://www.zhaodi.top/"/>
+  <updated>2020-12-03T07:12:46.000Z</updated>
+  <id>https://www.zhaodi.top/</id>
+  
+  <author>
+    <name>ZhoDi</name>
+    
+  </author>
+  
+  <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>离线部署PM2</title>
+    <link href="https://www.zhaodi.top/2020/12/03/%E7%A6%BB%E7%BA%BF%E9%83%A8%E7%BD%B2PM2/"/>
+    <id>https://www.zhaodi.top/2020/12/03/%E7%A6%BB%E7%BA%BF%E9%83%A8%E7%BD%B2PM2/</id>
+    <published>2020-12-03T07:12:46.000Z</published>
+    <updated>2020-12-03T07:12:46.000Z</updated>
+    
+    
+    <summary type="html">&lt;blockquote class=&quot;blockquote-center&quot;&gt;离线安装PM2管理项目&lt;/blockquote&gt;</summary>
+    
+    
+    
+    
+    <category term="Linux" scheme="https://www.zhaodi.top/tags/Linux/"/>
+    
+    <category term="PM2" scheme="https://www.zhaodi.top/tags/PM2/"/>
+    
+    <category term="Node" scheme="https://www.zhaodi.top/tags/Node/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Nginx添加模块</title>
+    <link href="https://www.zhaodi.top/2020/09/16/Nginx%E6%B7%BB%E5%8A%A0%E6%A8%A1%E5%9D%97/"/>
+    <id>https://www.zhaodi.top/2020/09/16/Nginx%E6%B7%BB%E5%8A%A0%E6%A8%A1%E5%9D%97/</id>
+    <published>2020-09-16T04:32:04.000Z</published>
+    <updated>2020-09-16T04:32:04.000Z</updated>
+    
+    
+    <summary type="html">&lt;blockquote class=&quot;blockquote-center&quot;&gt;Nginx添加模块&lt;/blockquote&gt;</summary>
+    
+    
+    
+    
+    <category term="Nginx添加模块" scheme="https://www.zhaodi.top/tags/Nginx%E6%B7%BB%E5%8A%A0%E6%A8%A1%E5%9D%97/"/>
+    
+    <category term="Nginx-Module" scheme="https://www.zhaodi.top/tags/Nginx-Module/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Nginx代理Kafka</title>
+    <link href="https://www.zhaodi.top/2020/09/15/Nginx%E4%BB%A3%E7%90%86Kafka/"/>
+    <id>https://www.zhaodi.top/2020/09/15/Nginx%E4%BB%A3%E7%90%86Kafka/</id>
+    <published>2020-09-15T10:05:49.000Z</published>
+    <updated>2020-09-15T10:05:49.000Z</updated>
+    
+    
+    <summary type="html">&lt;blockquote class=&quot;blockquote-center&quot;&gt;Nginx代理Kafka&lt;/blockquote&gt;</summary>
+    
+    
+    
+    
+    <category term="Nginx" scheme="https://www.zhaodi.top/tags/Nginx/"/>
+    
+    <category term="Kafka" scheme="https://www.zhaodi.top/tags/Kafka/"/>
+    
+    <category term="Nginx代理Kafka" scheme="https://www.zhaodi.top/tags/Nginx%E4%BB%A3%E7%90%86Kafka/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>docker部署gitlab集成自动化构建</title>
+    <link href="https://www.zhaodi.top/2020/01/13/docker%E9%83%A8%E7%BD%B2gitlab%E9%9B%86%E6%88%90%E8%87%AA%E5%8A%A8%E5%8C%96%E6%9E%84%E5%BB%BA/"/>
+    <id>https://www.zhaodi.top/2020/01/13/docker%E9%83%A8%E7%BD%B2gitlab%E9%9B%86%E6%88%90%E8%87%AA%E5%8A%A8%E5%8C%96%E6%9E%84%E5%BB%BA/</id>
+    <published>2020-01-13T02:54:09.000Z</published>
+    <updated>2020-01-13T02:54:09.000Z</updated>
+    
+    
+    <summary type="html">&lt;blockquote class=&quot;blockquote-center&quot;&gt;使用gitlab搭建内网代码仓库&lt;/blockquote&gt;</summary>
+    
+    
+    
+    
+    <category term="Docker" scheme="https://www.zhaodi.top/tags/Docker/"/>
+    
+    <category term="Linux" scheme="https://www.zhaodi.top/tags/Linux/"/>
+    
+    <category term="运维" scheme="https://www.zhaodi.top/tags/%E8%BF%90%E7%BB%B4/"/>
+    
+    <category term="gitlab" scheme="https://www.zhaodi.top/tags/gitlab/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>IPV6基础</title>
+    <link href="https://www.zhaodi.top/2019/12/13/IPV6%E5%9F%BA%E7%A1%80/"/>
+    <id>https://www.zhaodi.top/2019/12/13/IPV6%E5%9F%BA%E7%A1%80/</id>
+    <published>2019-12-13T03:47:31.000Z</published>
+    <updated>2019-12-13T03:47:31.000Z</updated>
+    
+    
+    <summary type="html">&lt;blockquote class=&quot;blockquote-center&quot;&gt;介绍IPV6基础知识,以及在NETCore项目应用&lt;/blockquote&gt;</summary>
+    
+    
+    
+    
+    <category term="IPV6" scheme="https://www.zhaodi.top/tags/IPV6/"/>
+    
+    <category term="NETCore" scheme="https://www.zhaodi.top/tags/NETCore/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Linux安装Redis</title>
+    <link href="https://www.zhaodi.top/2019/10/30/Linux%E5%AE%89%E8%A3%85Redis/"/>
+    <id>https://www.zhaodi.top/2019/10/30/Linux%E5%AE%89%E8%A3%85Redis/</id>
+    <published>2019-10-30T08:04:53.000Z</published>
+    <updated>2019-10-30T08:04:53.000Z</updated>
+    
+    
+    <summary type="html">&lt;blockquote class=&quot;blockquote-center&quot;&gt;Linux安装Redis&lt;/blockquote&gt;</summary>
+    
+    
+    
+    
+    <category term="Linux" scheme="https://www.zhaodi.top/tags/Linux/"/>
+    
+    <category term="Redis" scheme="https://www.zhaodi.top/tags/Redis/"/>
+    
+    <category term="Linux安装Redis" scheme="https://www.zhaodi.top/tags/Linux%E5%AE%89%E8%A3%85Redis/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>离线安装gcc</title>
+    <link href="https://www.zhaodi.top/2019/10/30/%E7%A6%BB%E7%BA%BF%E5%AE%89%E8%A3%85gcc/"/>
+    <id>https://www.zhaodi.top/2019/10/30/%E7%A6%BB%E7%BA%BF%E5%AE%89%E8%A3%85gcc/</id>
+    <published>2019-10-30T03:08:00.000Z</published>
+    <updated>2019-10-30T03:08:00.000Z</updated>
+    
+    
+    <summary type="html">&lt;blockquote class=&quot;blockquote-center&quot;&gt;离线安装gcc&lt;/blockquote&gt;</summary>
+    
+    
+    
+    
+    <category term="安装gcc" scheme="https://www.zhaodi.top/tags/%E5%AE%89%E8%A3%85gcc/"/>
+    
+    <category term="安装pcre" scheme="https://www.zhaodi.top/tags/%E5%AE%89%E8%A3%85pcre/"/>
+    
+    <category term="安装zlib" scheme="https://www.zhaodi.top/tags/%E5%AE%89%E8%A3%85zlib/"/>
+    
+    <category term="安装openssl" scheme="https://www.zhaodi.top/tags/%E5%AE%89%E8%A3%85openssl/"/>
+    
+    <category term="离线安装gcc" scheme="https://www.zhaodi.top/tags/%E7%A6%BB%E7%BA%BF%E5%AE%89%E8%A3%85gcc/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Nginx部署Vue项目</title>
+    <link href="https://www.zhaodi.top/2019/10/30/Nginx%E9%83%A8%E7%BD%B2Vue%E9%A1%B9%E7%9B%AE/"/>
+    <id>https://www.zhaodi.top/2019/10/30/Nginx%E9%83%A8%E7%BD%B2Vue%E9%A1%B9%E7%9B%AE/</id>
+    <published>2019-10-30T02:26:46.000Z</published>
+    <updated>2019-10-30T02:26:46.000Z</updated>
+    
+    
+    <summary type="html">&lt;blockquote class=&quot;blockquote-center&quot;&gt;安装Nginx过程,以及对Vue部署的配置&lt;/blockquote&gt;</summary>
+    
+    
+    
+    
+    <category term="Nginx" scheme="https://www.zhaodi.top/tags/Nginx/"/>
+    
+    <category term="Vue" scheme="https://www.zhaodi.top/tags/Vue/"/>
+    
+    <category term="Vue部署" scheme="https://www.zhaodi.top/tags/Vue%E9%83%A8%E7%BD%B2/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>离线安装Mariadb</title>
+    <link href="https://www.zhaodi.top/2019/10/10/%E5%AE%89%E8%A3%85Mariadb/"/>
+    <id>https://www.zhaodi.top/2019/10/10/%E5%AE%89%E8%A3%85Mariadb/</id>
+    <published>2019-10-10T06:08:41.000Z</published>
+    <updated>2019-10-10T06:08:41.000Z</updated>
+    
+    
+    <summary type="html">&lt;blockquote class=&quot;blockquote-center&quot;&gt;安装Mariadb&lt;/blockquote&gt;</summary>
+    
+    
+    
+    
+    <category term="Mariadb" scheme="https://www.zhaodi.top/tags/Mariadb/"/>
+    
+    <category term="Linux" scheme="https://www.zhaodi.top/tags/Linux/"/>
+    
+    <category term="安装Mariadb" scheme="https://www.zhaodi.top/tags/%E5%AE%89%E8%A3%85Mariadb/"/>
+    
+    <category term="离线安装Mariadb" scheme="https://www.zhaodi.top/tags/%E7%A6%BB%E7%BA%BF%E5%AE%89%E8%A3%85Mariadb/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Docker集群部署Mariadb</title>
+    <link href="https://www.zhaodi.top/2019/10/10/Docker%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2Mariadb/"/>
+    <id>https://www.zhaodi.top/2019/10/10/Docker%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2Mariadb/</id>
+    <published>2019-10-10T06:03:28.000Z</published>
+    <updated>2019-10-10T06:03:28.000Z</updated>
+    
+    
+    <summary type="html">&lt;blockquote class=&quot;blockquote-center&quot;&gt;Docker集群部署Mariadb&lt;/blockquote&gt;</summary>
+    
+    
+    
+    
+    <category term="Docker" scheme="https://www.zhaodi.top/tags/Docker/"/>
+    
+    <category term="Mariadb" scheme="https://www.zhaodi.top/tags/Mariadb/"/>
+    
+    <category term="Linux" scheme="https://www.zhaodi.top/tags/Linux/"/>
+    
+    <category term="Docker集群部署Mariadb" scheme="https://www.zhaodi.top/tags/Docker%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2Mariadb/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>ffmpeg+nginx实现rtsp转rtmp</title>
+    <link href="https://www.zhaodi.top/2019/10/08/ffmpeg-nginx%E5%AE%9E%E7%8E%B0rtsp%E8%BD%ACrtmp/"/>
+    <id>https://www.zhaodi.top/2019/10/08/ffmpeg-nginx%E5%AE%9E%E7%8E%B0rtsp%E8%BD%ACrtmp/</id>
+    <published>2019-10-08T06:12:22.000Z</published>
+    <updated>2019-10-08T06:12:22.000Z</updated>
+    
+    
+    <summary type="html">&lt;blockquote class=&quot;blockquote-center&quot;&gt;ffmpeg+nginx实现rtsp转rtmp&lt;/blockquote&gt;</summary>
+    
+    
+    
+    
+    <category term="nginx" scheme="https://www.zhaodi.top/tags/nginx/"/>
+    
+    <category term="ffmpeg" scheme="https://www.zhaodi.top/tags/ffmpeg/"/>
+    
+    <category term="rtsp" scheme="https://www.zhaodi.top/tags/rtsp/"/>
+    
+    <category term="rtmp" scheme="https://www.zhaodi.top/tags/rtmp/"/>
+    
+    <category term="rtsp转rtmp" scheme="https://www.zhaodi.top/tags/rtsp%E8%BD%ACrtmp/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Docker从入门到放弃</title>
+    <link href="https://www.zhaodi.top/2019/09/12/Docker%E4%BB%8E%E5%85%A5%E9%97%A8%E5%88%B0%E6%94%BE%E5%BC%83/"/>
+    <id>https://www.zhaodi.top/2019/09/12/Docker%E4%BB%8E%E5%85%A5%E9%97%A8%E5%88%B0%E6%94%BE%E5%BC%83/</id>
+    <published>2019-09-11T17:01:30.000Z</published>
+    <updated>2023-07-13T09:01:30.000Z</updated>
+    
+    
+    <summary type="html">&lt;blockquote class=&quot;blockquote-center&quot;&gt;Docker&lt;/blockquote&gt;</summary>
+    
+    
+    
+    
+    <category term="Docker" scheme="https://www.zhaodi.top/tags/Docker/"/>
+    
+    <category term="Linux" scheme="https://www.zhaodi.top/tags/Linux/"/>
+    
+    <category term="运维" scheme="https://www.zhaodi.top/tags/%E8%BF%90%E7%BB%B4/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Git基础教程</title>
+    <link href="https://www.zhaodi.top/2019/09/10/Git%E5%9F%BA%E7%A1%80%E6%95%99%E7%A8%8B/"/>
+    <id>https://www.zhaodi.top/2019/09/10/Git%E5%9F%BA%E7%A1%80%E6%95%99%E7%A8%8B/</id>
+    <published>2019-09-10T09:53:07.000Z</published>
+    <updated>2019-09-10T09:53:07.000Z</updated>
+    
+    
+    <summary type="html">&lt;blockquote class=&quot;blockquote-center&quot;&gt;Git基础入门, 主要介绍一些常用命令&lt;/blockquote&gt;</summary>
+    
+    
+    
+    
+    <category term="git" scheme="https://www.zhaodi.top/tags/git/"/>
+    
+    <category term="git命令" scheme="https://www.zhaodi.top/tags/git%E5%91%BD%E4%BB%A4/"/>
+    
+    <category term="git基础" scheme="https://www.zhaodi.top/tags/git%E5%9F%BA%E7%A1%80/"/>
+    
+  </entry>
+  
+</feed>

@@ -1,0 +1,898 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search>
+  <entry>
+    <title>Docker集群部署Mariadb</title>
+    <url>/2019/10/10/Docker%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2Mariadb/</url>
+    <content><![CDATA[<blockquote class="blockquote-center">Docker集群部署Mariadb</blockquote>
+
+<span id="more"></span>
+
+<div class="note info"><h1 id="一丶主从模式"><a href="#一丶主从模式" class="headerlink" title="一丶主从模式"></a>一丶主从模式</h1></div>
+
+<h2 id="前期准备"><a href="#前期准备" class="headerlink" title="前期准备"></a>前期准备</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 拉取mariadb镜像</span></span><br><span class="line">docker pull mariadb:latest</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建docker网络 默认bridge驱动</span></span><br><span class="line">docker network create db-net</span><br><span class="line"></span><br><span class="line"><span class="comment"># 新建两个目录用来挂载mariadb数据</span></span><br><span class="line"><span class="built_in">mkdir</span> -p /home/docker-databases/master-db</span><br><span class="line"><span class="built_in">mkdir</span> /home/docker-databases/slave-db1</span><br></pre></td></tr></table></figure>
+
+<h2 id="启动镜像"><a href="#启动镜像" class="headerlink" title="启动镜像"></a>启动镜像</h2><p><code>--name</code>：容器别名<br><code>-v</code>：本地路径:docker容器路径<br><code>-p</code>：本地IP:docker容器IP<br><code>-e</code>：环境变量<br><code>-d</code>：后台运行<br><code>--name</code>：容器别名<br><code>--character-set-server</code>：设置编码<br><code>--collation-server</code>：设置编码  </p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment"># 创建容器的时候报错WARNING: IPv4 forwarding is disabled. Networking will not work.需要开启路由转发</span></span><br><span class="line">vim  /usr/lib/sysctl.d/00-system.conf</span><br><span class="line"><span class="comment"># 添加 路由转发功能</span></span><br><span class="line">net.ipv4.ip_forward=1</span><br><span class="line"><span class="comment"># 重启网络</span></span><br><span class="line">systemctl restart network</span><br><span class="line"></span><br><span class="line"><span class="comment"># 启动master-db</span></span><br><span class="line">docker run \</span><br><span class="line">    --name masterdb \</span><br><span class="line">    --network db-net \</span><br><span class="line">    -v /home/docker-databases/master-db:/var/lib/mysql \</span><br><span class="line">    -p 13306:3306 \</span><br><span class="line">    -e MYSQL_ROOT_PASSWORD=123456 \</span><br><span class="line">    -d mariadb:latest \</span><br><span class="line">    --character-set-server=utf8mb4 \</span><br><span class="line">    --collation-server=utf8mb4_unicode_ci</span><br><span class="line"><span class="comment"># 启动slave-db1</span></span><br><span class="line">docker run \</span><br><span class="line">    --name slavedb1 \</span><br><span class="line">    --network db-net \</span><br><span class="line">    -v /home/docker-databases/slave-db1:/var/lib/mysql \</span><br><span class="line">    -p 13307:3306 \</span><br><span class="line">    -e MYSQL_ROOT_PASSWORD=123456 \</span><br><span class="line">    -d mariadb:latest \</span><br><span class="line">    --character-set-server=utf8mb4 \</span><br><span class="line">    --collation-server=utf8mb4_unicode_ci</span><br></pre></td></tr></table></figure>
+
+<h2 id="环境准备"><a href="#环境准备" class="headerlink" title="环境准备"></a>环境准备</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 进入容器</span></span><br><span class="line">docker <span class="built_in">exec</span> -it masterdb bash</span><br><span class="line">docker <span class="built_in">exec</span> -it slavedb1 bash</span><br><span class="line"></span><br><span class="line"><span class="comment"># 都更新列表并安装vim</span></span><br><span class="line">apt-get update</span><br><span class="line">apt-get install vim</span><br></pre></td></tr></table></figure>
+
+<h2 id="配置Master主服务器172-18-0-2"><a href="#配置Master主服务器172-18-0-2" class="headerlink" title="配置Master主服务器172.18.0.2"></a>配置Master主服务器<code>172.18.0.2</code></h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 创建并授权slave权限 </span></span><br><span class="line"><span class="comment"># slave---用户名</span></span><br><span class="line"><span class="comment"># 172.18.0.2---本机IP</span></span><br><span class="line"><span class="comment"># 123456---要设置的密码</span></span><br><span class="line">CREATE USER <span class="string">&#x27;slave&#x27;</span>@<span class="string">&#x27;172.18.0.2&#x27;</span> IDENTIFIED BY <span class="string">&#x27;123456&#x27;</span>;</span><br><span class="line">GRANT REPLICATION SLAVE ON *.*  TO <span class="string">&#x27;slave&#x27;</span>@<span class="string">&#x27;172.18.0.2&#x27;</span>;</span><br><span class="line">mysql&gt; create user slave;</span><br><span class="line">mysql&gt; GRANT REPLICATION SLAVE ON *.* TO <span class="string">&#x27;slave&#x27;</span>@<span class="string">&#x27;172.18.0.2&#x27;</span> IDENTIFIED BY <span class="string">&#x27;123456&#x27;</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 配置/etc/mysql/my.conf----在[mysqld]下面增加下面几行代码</span></span><br><span class="line">server-id        = 1                   <span class="comment"># server-id 必须唯一</span></span><br><span class="line">log_bin          = master-bin          <span class="comment"># 二进制日志</span></span><br><span class="line">log_bin_index    = master-bin.index</span><br><span class="line">binlog-ignore-db = mysql               <span class="comment"># 忽略记录的数据库,多个库用‘,’分隔</span></span><br><span class="line">binlog-ignore-db = information_schema</span><br><span class="line">binlog-ignore-db = performance_schema</span><br><span class="line"><span class="comment"># binlog-do-db = testdb                # 只记录testdb库变化,多个库用‘,’分隔</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 重启容器</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看日志</span></span><br><span class="line">mysql&gt; SHOW MASTER STATUS;</span><br></pre></td></tr></table></figure>
+
+<h2 id="配置slave从服务器172-18-0-3"><a href="#配置slave从服务器172-18-0-3" class="headerlink" title="配置slave从服务器172.18.0.3"></a>配置slave从服务器<code>172.18.0.3</code></h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 配置/etc/mysql/my.cnf---在[mysqld]下面增加下面几行代码</span></span><br><span class="line">server-id        = 2               <span class="comment"># server-id 必须唯一</span></span><br><span class="line">relay_log        = relay-bin       <span class="comment"># 中继日志</span></span><br><span class="line">relay_log_index  = relay-bin.index</span><br><span class="line"><span class="comment"># log-slave-updates                # 当做级联复制，或者从库做备份时A--&gt;B--&gt;C，B服务需要开启log-bin和log-slave-updates，二者缺一不可</span></span><br><span class="line"><span class="comment"># expire_logs_days =7              # 当binlog日志较多时，此参数的值意思是只保留7天内的数据。主库及从库都可以配置此参数。</span></span><br><span class="line"><span class="comment"># replication-do-db = testdb       # 只同步testdb库，多个库用‘,’分隔</span></span><br><span class="line"><span class="comment"># replication-ignore-db=mysql      # 不同步mysql库，多个库用‘,’分隔</span></span><br><span class="line"><span class="comment"># replication-do-table = test_tb   # 只同步test_tb表，多个表用‘,’分隔</span></span><br><span class="line"><span class="comment"># replication-ignore-table = test_tb #不同步test_tb表，多个表用‘,’分隔</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 重启容器</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 连接到主服务器</span></span><br><span class="line"><span class="comment"># 172.18.0.2---masterIP</span></span><br><span class="line"><span class="comment"># 3306---master端口</span></span><br><span class="line"><span class="comment"># slave---master创建的用户名</span></span><br><span class="line"><span class="comment"># 123456----slave的密码</span></span><br><span class="line"><span class="comment"># master-bin.000001和329----master执行SHOW MASTER STATUS显示的;</span></span><br><span class="line">mysql&gt; change master to master_host=<span class="string">&#x27;172.18.0.2&#x27;</span>,</span><br><span class="line">master_port=3306,</span><br><span class="line">master_user=<span class="string">&#x27;slave&#x27;</span>,</span><br><span class="line">master_password=<span class="string">&#x27;123456&#x27;</span>, </span><br><span class="line">master_log_file=<span class="string">&#x27;master-bin.000001&#x27;</span>,</span><br><span class="line">master_log_pos=329;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 启动Slave  终止:stop slave;</span></span><br><span class="line">start slave;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看Slave状态</span></span><br><span class="line">mysql&gt; show slave status \G;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 关闭写入权限</span></span><br><span class="line">mysql&gt; SHOW global variables like <span class="string">&#x27;read%&#x27;</span>;   //查看read_only 状态</span><br><span class="line">+----------------------+--------+</span><br><span class="line">| Variable_name        | Value  |</span><br><span class="line">+----------------------+--------+</span><br><span class="line">| read_buffer_size     | 131072 |</span><br><span class="line">| read_only            | OFF    |</span><br><span class="line">| read_rnd_buffer_size | 262144 |</span><br><span class="line">+----------------------+--------+</span><br><span class="line"> rows <span class="keyword">in</span> <span class="built_in">set</span> (0.01 sec) </span><br><span class="line"></span><br><span class="line"> <span class="comment"># 设置read_only为只读</span></span><br><span class="line"> <span class="comment"># 当前环境生效，重启后失效。</span></span><br><span class="line"> mysql&gt; SET GLOBAL read_only=1;    </span><br><span class="line"> <span class="comment"># 全局有效</span></span><br><span class="line"> vim /etc/my.cnf 添加一行read_only=1   </span><br><span class="line"> <span class="comment"># 注意：read-only = ON ，这项功能只对非管理员组以为的用户有效！</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h2 id="测试主从同步"><a href="#测试主从同步" class="headerlink" title="测试主从同步"></a>测试主从同步</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">mysql&gt; CREATE DATABASE IF NOT EXISTS testdb  DEFAULT CHARSET utf8mb4 COLLATE utf8mb4_general_ci;</span><br><span class="line">mysql&gt; use testdb;</span><br><span class="line">mysql&gt; CREATE TABLE `test1` (</span><br><span class="line">  `<span class="built_in">id</span>` int(11) NOT NULL,</span><br><span class="line">  `name` varchar(100) NOT NULL,</span><br><span class="line">  `create_time` int(11) NOT NULL,</span><br><span class="line">  `update_time` int(11) NOT NULL,</span><br><span class="line">  `delete_time` int(11) DEFAULT NULL</span><br><span class="line">) ENGINE=InnoDB DEFAULT CHARSET=utf8;</span><br><span class="line"></span><br><span class="line">mysql&gt; ALTER TABLE `test1`  ADD PRIMARY KEY (`<span class="built_in">id</span>`);</span><br><span class="line">mysql&gt; ALTER TABLE `test1`  MODIFY `<span class="built_in">id</span>` int(11) NOT NULL AUTO_INCREMENT;</span><br><span class="line"></span><br><span class="line">mysql&gt; insert into test1 values (null,<span class="string">&#x27;tianye&#x27;</span>,1,1,null);</span><br><span class="line"></span><br><span class="line"><span class="comment"># Slave服务器上查看数据</span></span><br><span class="line">mysql&gt; use testdb;</span><br><span class="line">mysql&gt; <span class="keyword">select</span> * from test1 <span class="built_in">limit</span> 10;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 完成</span></span><br></pre></td></tr></table></figure>]]></content>
+      <tags>
+        <tag>Docker</tag>
+        <tag>Mariadb</tag>
+        <tag>Linux</tag>
+        <tag>Docker集群部署Mariadb</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Linux安装Redis</title>
+    <url>/2019/10/30/Linux%E5%AE%89%E8%A3%85Redis/</url>
+    <content><![CDATA[<blockquote class="blockquote-center">Linux安装Redis</blockquote>
+
+<span id="more"></span>
+
+<h1 id="一丶安装gcc"><a href="#一丶安装gcc" class="headerlink" title="一丶安装gcc"></a>一丶安装gcc</h1><p>先检查是否存在gcc,命令:<code>gcc --version</code>.出现gcc版本证明存在,可以跳过此步</p>
+<h3 id="在线安装"><a href="#在线安装" class="headerlink" title="在线安装"></a>在线安装</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">yum install gcc gcc-c++</span><br></pre></td></tr></table></figure>
+
+<h3 id="离线安装"><a href="#离线安装" class="headerlink" title="离线安装"></a>离线安装</h3><blockquote>
+<p>请移步另一篇博客： <a href="/2019/10/30/%E7%A6%BB%E7%BA%BF%E5%AE%89%E8%A3%85gcc/" title="离线安装gcc">离线安装gcc</a></p>
+</blockquote>
+<h1 id="二丶安装配置Redis"><a href="#二丶安装配置Redis" class="headerlink" title="二丶安装配置Redis"></a>二丶安装配置Redis</h1><p><a href="http://download.redis.io/releases/">Redis下载地址</a></p>
+<h2 id="安装Redis"><a href="#安装Redis" class="headerlink" title="安装Redis"></a>安装Redis</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 创建安装目录</span></span><br><span class="line"><span class="built_in">cd</span> /usr/local</span><br><span class="line"><span class="built_in">mkdir</span> redis</span><br><span class="line"><span class="built_in">cd</span> redis</span><br><span class="line"><span class="comment"># 下载</span></span><br><span class="line">wget http://download.redis.io/releases/redis-4.0.14.tar.gz</span><br><span class="line"></span><br><span class="line"><span class="comment"># 解压</span></span><br><span class="line">tar -zxvf redis-4.0.14.tar.gz</span><br><span class="line"><span class="built_in">cd</span> redis-4.0.14/src</span><br><span class="line">make</span><br><span class="line"><span class="comment"># 安装完成</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="配置Reids"><a href="#配置Reids" class="headerlink" title="配置Reids"></a>配置Reids</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 开放防火墙6379端口</span></span><br><span class="line">firewall-cmd --zone=public --add-port=6379/tcp --permanent</span><br><span class="line">firewall-cmd --reload</span><br><span class="line">firewall-cmd --zone=public --query-port=6379/tcp</span><br><span class="line"></span><br><span class="line"><span class="comment"># 开启远程访问redis</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 编辑配置文件(在redis-4.0.14目录下)</span></span><br><span class="line">vi redis.conf</span><br><span class="line"><span class="comment"># 连接IP, 0.0.0.0 为所有</span></span><br><span class="line"><span class="built_in">bind</span> 0.0.0.0</span><br><span class="line"><span class="comment"># 限制局域网连接</span></span><br><span class="line">protected-mode no</span><br><span class="line"><span class="comment"># 后台运行</span></span><br><span class="line">daemonize <span class="built_in">yes</span></span><br><span class="line"><span class="comment"># 启动redis,带上配置文件</span></span><br><span class="line">./redis-server ../redis-conf</span><br></pre></td></tr></table></figure>
+]]></content>
+      <tags>
+        <tag>Linux</tag>
+        <tag>Redis</tag>
+        <tag>Linux安装Redis</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Nginx部署Vue项目</title>
+    <url>/2019/10/30/Nginx%E9%83%A8%E7%BD%B2Vue%E9%A1%B9%E7%9B%AE/</url>
+    <content><![CDATA[<blockquote class="blockquote-center">安装Nginx过程,以及对Vue部署的配置</blockquote>
+
+<span id="more"></span>
+
+
+<div class="note info"><h1 id="一丶安装gcc及其依赖包"><a href="#一丶安装gcc及其依赖包" class="headerlink" title="一丶安装gcc及其依赖包"></a>一丶安装gcc及其依赖包</h1></div>
+
+<h2 id="在线安装"><a href="#在线安装" class="headerlink" title="在线安装"></a>在线安装</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">yum -y install gcc zlib zlib-devel pcre-devel openssl openssl-devel</span><br></pre></td></tr></table></figure>
+
+<h2 id="离线安装"><a href="#离线安装" class="headerlink" title="离线安装"></a>离线安装</h2><blockquote>
+<p>请移步另一篇博客： <a href="/2019/10/30/%E7%A6%BB%E7%BA%BF%E5%AE%89%E8%A3%85gcc/" title="离线安装gcc">离线安装gcc</a></p>
+</blockquote>
+<div class="note info"><h1 id="二丶安装nginx"><a href="#二丶安装nginx" class="headerlink" title="二丶安装nginx"></a>二丶安装nginx</h1></div>
+
+<ol>
+<li>在线安装</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">cd</span> /usr/local</span><br><span class="line"><span class="built_in">mkdir</span> nginx</span><br><span class="line"><span class="built_in">cd</span> nginx</span><br><span class="line">wget -c http://nginx.org/download/nginx-1.16.1.tar.gz</span><br><span class="line">tar -zxvf nginx-1.16.1.tar.gz</span><br><span class="line"><span class="built_in">cd</span> nginx-1.16.1</span><br><span class="line"><span class="comment"># --with-http_ssl_module 让nginx支持ssl</span></span><br><span class="line">./configure --prefix=/usr/local/nginx  --with-http_ssl_module</span><br><span class="line">make &amp;&amp; make install</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>启动nginx</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">cd</span> ../sbin</span><br><span class="line"><span class="comment"># 启动</span></span><br><span class="line">/usr/local/nginx/sbin/nginx</span><br><span class="line"><span class="comment"># 常用命令</span></span><br><span class="line">/usr/local/nginx/sbin/nginx -t</span><br><span class="line">/usr/local/nginx/sbin/nginx -c /usr/local/nginx/conf/nginx.conf</span><br><span class="line">/usr/local/nginx/sbin/nginx -s stop</span><br><span class="line">/usr/local/nginx/sbin/nginx -s reload</span><br></pre></td></tr></table></figure>
+
+<p>访问服务器ip查看 能看到welcome to nginx即部署成功</p>
+<div class="note info"><h1 id="二丶部署vue项目"><a href="#二丶部署vue项目" class="headerlink" title="二丶部署vue项目"></a>二丶部署vue项目</h1></div>
+
+<ol>
+<li>修改conf&#x2F;nginx.conf配置文件</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 主要新增配置项</span></span><br><span class="line">server &#123;</span><br><span class="line">    <span class="comment"># 端口</span></span><br><span class="line">    listen       80;</span><br><span class="line">    <span class="comment"># 地址名称</span></span><br><span class="line">    server_name  localhost;</span><br><span class="line">    <span class="comment"># 设置编码格式</span></span><br><span class="line">    charset utf-8;       </span><br><span class="line">    </span><br><span class="line">    <span class="comment"># 前端地址改为html/dist</span></span><br><span class="line">    location / &#123;</span><br><span class="line">        root   html/dist;</span><br><span class="line">        index  index.html;</span><br><span class="line">        <span class="comment"># 重定向页面到使用下面配置的router路由</span></span><br><span class="line">        try_files <span class="variable">$uri</span> <span class="variable">$uri</span>/ @router;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 将api开头的请求转发到后端的api地址 (.NETCore可选择在启动项里自己配置跨域请求,尽量不使用Nginx代理)</span></span><br><span class="line">    location /api/ &#123;</span><br><span class="line">      <span class="comment"># 后端的真实接口,</span></span><br><span class="line">      proxy_pass http://10.1.30.50:60003/api/;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 由于路由的资源不一定是真实的路径，无法找到具体文件</span></span><br><span class="line">    <span class="comment"># 所以需要将请求重写到 index.html 中，然后交给真正的 Vue 路由处理请求资源</span></span><br><span class="line">    location @router &#123;</span><br><span class="line">      rewrite ^.*$ /index.html last;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>]]></content>
+      <tags>
+        <tag>Nginx</tag>
+        <tag>Vue</tag>
+        <tag>Vue部署</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>离线安装Mariadb</title>
+    <url>/2019/10/10/%E5%AE%89%E8%A3%85Mariadb/</url>
+    <content><![CDATA[<blockquote class="blockquote-center">安装Mariadb</blockquote>
+
+<span id="more"></span>
+<div class="note info"><h1 id="一丶安装Mariadb-版本5-5-56"><a href="#一丶安装Mariadb-版本5-5-56" class="headerlink" title="一丶安装Mariadb 版本5.5.56"></a>一丶安装Mariadb 版本5.5.56</h1></div>
+
+<h2 id="离线安装"><a href="#离线安装" class="headerlink" title="离线安装"></a>离线安装</h2><ul>
+<li><a href="https://pan.baidu.com/s/1-B1t0TRRXoNUtRxz8z3DkA">离线包下载</a>  提取码: xgjv</li>
+<li>下载慢可以看下方安装记录自己去寻找离线包和环境<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 解压离线rpm包</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 原生CentOS7需要安装这个,红旗不需要请忽略,如果下面一条命令报错需要libpcap也可执行</span></span><br><span class="line">rpm -ivh libpcap-1.5.3-8.axs7.x86_64.rpm</span><br><span class="line"></span><br><span class="line"><span class="comment"># 安装mariadb的rpm依赖包</span></span><br><span class="line">rpm -ivh rsync-3.0.9-17.axs7.x86_64.rpm nmap-* lsof-4.87-4.axs7.x86_64.rpm perl-* boost-*</span><br><span class="line"></span><br><span class="line"><span class="comment"># 搜索 没有搜索结果直接跳过下一步卸载</span></span><br><span class="line">rpm -qa | grep mariadb-libs</span><br><span class="line"><span class="comment"># 卸载 将搜索结果复制到卸载命令</span></span><br><span class="line">rpm -ev --nodeps [搜索结果]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 安装mariadb</span></span><br><span class="line">rpm -ivh jemalloc-3.6.0-1.el7.x86_64.rpm jemalloc-devel-3.6.0-1.el7.x86_64.rpm</span><br><span class="line">rpm -ivh galera-25.3.20-1.rhel7.el7.centos.x86_64.rpm</span><br><span class="line">rpm -ivh MariaDB-10.1.21-centos7-x86_64-common.rpm MariaDB-5.5.56-centos7-x86_64-compat.rpm MariaDB-5.5.56-centos7-x86_64-client.rpm MariaDB-5.5.56-centos7-x86_64-server.rpm</span><br><span class="line"><span class="comment"># 安装完成</span></span><br></pre></td></tr></table></figure></li>
+</ul>
+<h2 id="配置Mariadb"><a href="#配置Mariadb" class="headerlink" title="配置Mariadb"></a>配置Mariadb</h2><h3 id="初始化脚本"><a href="#初始化脚本" class="headerlink" title="初始化脚本"></a>初始化脚本</h3>  <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 开启mysql</span></span><br><span class="line">service mysql start</span><br><span class="line"><span class="comment"># 查看状态</span></span><br><span class="line">service mysql status</span><br><span class="line"><span class="comment"># 执行mysql初始化脚本</span></span><br><span class="line">mysql_secure_installation</span><br><span class="line"></span><br><span class="line"><span class="comment"># 输入root密码; 初始安装完没密码直接回车</span></span><br><span class="line">Enter current password <span class="keyword">for</span> root (enter <span class="keyword">for</span> none): </span><br><span class="line"></span><br><span class="line"><span class="comment"># 为root设置密码; y 设置</span></span><br><span class="line">Set root password? [Y/n] y</span><br><span class="line"></span><br><span class="line"><span class="comment"># 两次密码一直成功</span></span><br><span class="line">New password: </span><br><span class="line">Re-enter new password: </span><br><span class="line">Password updated successfully!</span><br><span class="line">Reloading privilege tables..</span><br><span class="line">... Success!</span><br><span class="line"></span><br><span class="line"><span class="comment"># 是否移除匿名用户; y 移除</span></span><br><span class="line">Remove anonymous <span class="built_in">users</span>? [Y/n] y</span><br><span class="line"></span><br><span class="line"><span class="comment"># 是否开启远程登录; y 开启</span></span><br><span class="line">Disallow root login remotely? [Y/n] y</span><br><span class="line"></span><br><span class="line"><span class="comment"># 是否删除test数据库; y 删除</span></span><br><span class="line">Remove <span class="built_in">test</span> database and access to it? [Y/n] y</span><br><span class="line"></span><br><span class="line"><span class="comment"># 是否重新加载权限; y 加载</span></span><br><span class="line">Reload privilege tables now? [Y/n] y</span><br><span class="line"></span><br><span class="line"><span class="comment"># 完成</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="配置远程连接权限"><a href="#配置远程连接权限" class="headerlink" title="配置远程连接权限"></a>配置远程连接权限</h3>  <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 登录mysql</span></span><br><span class="line">mysql -u root -p</span><br><span class="line"><span class="comment"># 开启远程连接权限</span></span><br><span class="line">grant all privileges on *.* to <span class="string">&#x27;root&#x27;</span>@<span class="string">&#x27;%&#x27;</span> identified by <span class="string">&#x27;root密码&#x27;</span>;flush privileges;</span><br><span class="line"><span class="comment"># 完成</span></span><br></pre></td></tr></table></figure>
+<h3 id="开启3306端口"><a href="#开启3306端口" class="headerlink" title="开启3306端口"></a>开启3306端口</h3>  <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">firewall-cmd --zone=public --add-port=3306/tcp --permanent</span><br><span class="line">firewall-cmd --reload</span><br><span class="line">firewall-cmd --zone=public --query-port=3306/tcp</span><br></pre></td></tr></table></figure>
+
+<h3 id="修改默认字符集"><a href="#修改默认字符集" class="headerlink" title="修改默认字符集"></a>修改默认字符集</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">1）使用vi server.cnf命令编辑server.cnf文件，在[mysqld]标签下添加</span><br><span class="line">  如果/etc/my.cnf.d 目录下无server.cnf文件，则直接在/etc/my.cnf文件的[mysqld]标签下添加以下内容。</span><br><span class="line">  init_connect=<span class="string">&#x27;SET collation_connection = utf8_unicode_ci&#x27;</span> </span><br><span class="line">  init_connect=<span class="string">&#x27;SET NAMES utf8&#x27;</span></span><br><span class="line">  character-set-server=utf8 </span><br><span class="line">  collation-server=utf8_unicode_ci </span><br><span class="line">  skip-character-set-client-handshake</span><br><span class="line"></span><br><span class="line">2）文件/etc/my.cnf.d/client.cnf</span><br><span class="line"></span><br><span class="line">vi /etc/my.cnf.d/client.cnf</span><br><span class="line"></span><br><span class="line">在[client]中添加</span><br><span class="line"></span><br><span class="line">default-character-set=utf8</span><br><span class="line"></span><br><span class="line">3）文件/etc/my.cnf.d/mysql-clients.cnf</span><br><span class="line"></span><br><span class="line">vi /etc/my.cnf.d/mysql-clients.cnf</span><br><span class="line">// 在[mysql]中添加</span><br><span class="line"></span><br><span class="line">default-character-set=utf8</span><br><span class="line">// 全部配置完成，重启mariadb</span><br><span class="line"></span><br><span class="line">systemctl restart mariadb</span><br><span class="line"> //之后进入MariaDB查看字符集</span><br><span class="line"></span><br><span class="line">mysql&gt; show variables like <span class="string">&quot;%character%&quot;</span>;show variables like <span class="string">&quot;%collation%&quot;</span>;</span><br></pre></td></tr></table></figure>
+<p style="text-align:center;">-----------------------------------------安装完成-----------------------------------------</p>
+  
+<hr>
+<div class="note warning"><h1 id="离线安装安装过程记录"><a href="#离线安装安装过程记录" class="headerlink" title="离线安装安装过程记录"></a>离线安装安装过程记录</h1></div>
+
+<h3 id="如何获取离线包"><a href="#如何获取离线包" class="headerlink" title="如何获取离线包"></a>如何获取离线包</h3><ul>
+<li><p>获取依赖包</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 安装yum-utils</span></span><br><span class="line">yum -y install yum-utils</span><br><span class="line"><span class="comment"># 创建放置rpm包目录</span></span><br><span class="line"><span class="built_in">mkdir</span> -p /home/soft</span><br><span class="line"><span class="comment"># 下载</span></span><br><span class="line">yum install [要下载的包名] --downloadonly --downloaddir=/home/soft</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>获取mariadb包<br><a href="http://ftp.hosteurope.de/mirror/archive.mariadb.org/mariadb-5.5.56/yum/centos/7/x86_64/rpms/">mariadb官网离线npm包</a></p>
+</li>
+</ul>
+<h3 id="先安装mariadb的rpm依赖包"><a href="#先安装mariadb的rpm依赖包" class="headerlink" title="先安装mariadb的rpm依赖包"></a>先安装mariadb的rpm依赖包</h3>  <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 在线安装 </span></span><br><span class="line">yum install rsync nmap lsof perl-DBI nc</span><br><span class="line"><span class="comment"># 离线安装</span></span><br><span class="line">rpm -ivh rsync-3.0.9-17.axs7.x86_64.rpm nmap-* lsof-4.87-4.axs7.x86_64.rpm perl-*</span><br></pre></td></tr></table></figure>
+
+<h3 id="安装mariadb"><a href="#安装mariadb" class="headerlink" title="安装mariadb"></a>安装mariadb</h3><ul>
+<li><p>安装jemalloc</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 安装</span></span><br><span class="line">rpm -ivh jemalloc-3.6.0-1.el7.x86_64.rpm</span><br><span class="line">rpm -ivh jemalloc-devel-3.6.0-1.el7.x86_64.rpm</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>安装 MariaDB-5.5.56-centos7-x86_64-common.rpm</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 安装  </span></span><br><span class="line">rpm -ivh MariaDB-10.1.21-centos7-x86_64-common.rpm</span><br><span class="line"></span><br><span class="line"><span class="comment"># 报错如下</span></span><br><span class="line">错误：依赖检测失败： </span><br><span class="line">      mariadb-libs &lt; 1:5.5.56-1.el7.centos 与 MariaDB-common-5.5.56-1.el7.centos.x86_64 冲突</span><br><span class="line"></span><br><span class="line"><span class="comment"># 解决,卸载冲突的包</span></span><br><span class="line"><span class="comment"># 先搜索此包</span></span><br><span class="line">rpm -qa | grep mariadb-libs</span><br><span class="line"><span class="comment"># 卸载此包</span></span><br><span class="line">rpm -ev --nodeps mariadb-libs-5.5.52-1.axs7.x86_64</span><br><span class="line"><span class="comment"># 再次安装</span></span><br><span class="line">rpm -ivh MariaDB-10.1.21-centos7-x86_64-common.rpm</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>安装 galera-25.3.20-1.rhel7.el7.centos.x86_64.rpm</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"> <span class="comment">#安装</span></span><br><span class="line"> rpm -ivh galera-25.3.20-1.rhel7.el7.centos.x86_64.rpm</span><br><span class="line"></span><br><span class="line"> <span class="comment"># 报错如下</span></span><br><span class="line"> 错误：依赖检测失败：</span><br><span class="line">libboost_program_options.so.1.53.0()(64bit) 被 galera-25.3.20-1.rhel7.el7.centos.x86_64 需要</span><br><span class="line"></span><br><span class="line"> <span class="comment"># 解决,安装 boost-devel.x86_64</span></span><br><span class="line"> <span class="comment"># 离线</span></span><br><span class="line"> rpm -ivh boost-*</span><br><span class="line"> <span class="comment"># 在线</span></span><br><span class="line"> yum install boost-devel.x86_64</span><br><span class="line"> <span class="comment"># 再次安装</span></span><br><span class="line"> rpm -ivh galera-25.3.20-1.rhel7.el7.centos.x86_64.rpm</span><br></pre></td></tr></table></figure></li>
+<li><p>安装 剩下的compat、client、server</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">rpm -ivh MariaDB-5.5.56-centos7-x86_64-compat.rpm MariaDB-5.5.56-centos7-x86_64-client.rpm MariaDB-5.5.56-centos7-x86_64-server.rpm</span><br><span class="line"><span class="comment"># 安装完成</span></span><br></pre></td></tr></table></figure></li>
+</ul>
+<blockquote>
+<p><a href="https://mariadb.com/kb/en/library/mariadb-installation-version-10121-via-rpms-on-centos-7/">mariadb官网离线安装10.x</a></p>
+</blockquote>
+<blockquote>
+<p><a href="http://ftp.hosteurope.de/mirror/archive.mariadb.org/mariadb-5.5.56/yum/centos/7/x86_64/rpms/">mariadb官网离线npm包</a></p>
+</blockquote>
+<blockquote>
+<p><a href="https://www.cnblogs.com/haoliyou/p/10191926.html">安装参考博客</a></p>
+</blockquote>
+<blockquote>
+<p><a href="https://blog.csdn.net/topswim/article/details/86578118">获取离线包参考博客</a></p>
+</blockquote>
+<blockquote>
+<p><a href="https://blog.csdn.net/GX_1_11_real/article/details/80694556">获取离线包参考博客</a></p>
+</blockquote>
+]]></content>
+      <tags>
+        <tag>Mariadb</tag>
+        <tag>Linux</tag>
+        <tag>安装Mariadb</tag>
+        <tag>离线安装Mariadb</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>ffmpeg+nginx实现rtsp转rtmp</title>
+    <url>/2019/10/08/ffmpeg-nginx%E5%AE%9E%E7%8E%B0rtsp%E8%BD%ACrtmp/</url>
+    <content><![CDATA[<blockquote class="blockquote-center">ffmpeg+nginx实现rtsp转rtmp</blockquote>
+
+<span id="more"></span>
+
+<div class="note info"><h1 id="一丶安装"><a href="#一丶安装" class="headerlink" title="一丶安装"></a>一丶安装</h1></div>
+
+<h2 id="安装Gcc编译环境"><a href="#安装Gcc编译环境" class="headerlink" title="安装Gcc编译环境"></a>安装Gcc编译环境</h2><h3 id="在线安装"><a href="#在线安装" class="headerlink" title="在线安装"></a>在线安装</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">yum install gcc gcc-c++ zlib zlib-devel pcre pcre-devel openssl openssl-devel</span><br></pre></td></tr></table></figure>
+
+<h3 id="离线安装"><a href="#离线安装" class="headerlink" title="离线安装"></a>离线安装</h3><blockquote>
+<p>请移步另一篇博客： <a href="/2019/10/30/%E7%A6%BB%E7%BA%BF%E5%AE%89%E8%A3%85gcc/" title="离线安装gcc">离线安装gcc</a></p>
+</blockquote>
+<blockquote>
+<p>包一律下载到&#x2F;usr&#x2F;local&#x2F;src目录下</p>
+</blockquote>
+<h2 id="下载nginx-rtmp-module"><a href="#下载nginx-rtmp-module" class="headerlink" title="下载nginx-rtmp-module"></a>下载nginx-rtmp-module</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">git <span class="built_in">clone</span> https://github.com/arut/nginx-rtmp-module.git</span><br></pre></td></tr></table></figure>
+
+<h2 id="安装Nginx"><a href="#安装Nginx" class="headerlink" title="安装Nginx"></a>安装Nginx</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 下载 </span></span><br><span class="line">wget http://nginx.org/download/nginx-1.8.1.tar.gz</span><br><span class="line"><span class="comment"># 解压</span></span><br><span class="line">tar -zxvf nginx-1.8.1.tar.gz</span><br><span class="line"><span class="comment"># 进入目录</span></span><br><span class="line"><span class="built_in">cd</span> nginx-1.8.1</span><br><span class="line"><span class="comment"># 安装 使用在线安装pcre zlib openssl的话要将对应的--with-***去掉,也就是最后三条</span></span><br><span class="line"> ./configure --prefix=/usr/local/nginx --add-module=/usr/local/src/nginx-rtmp-module --with-pcre=/usr/local/src/pcre-8.35 --with-zlib=/usr/local/src/zlib-1.2.11 --with-openssl=/usr/local/src/openssl-1.0.2n</span><br><span class="line"> make &amp;&amp; make install</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>注意:</strong><code>--with-***=</code>和<code>--add-module=</code>后跟下载的源码路径</p>
+</blockquote>
+<h2 id="安装yasm"><a href="#安装yasm" class="headerlink" title="安装yasm"></a>安装yasm</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 下载</span></span><br><span class="line">wget http://www.tortall.net/projects/yasm/releases/yasm-1.3.0.tar.gz</span><br><span class="line"><span class="comment"># 解压</span></span><br><span class="line">tar -zxvf yasm-1.3.0.tar.gz</span><br><span class="line"><span class="comment"># 进入目录</span></span><br><span class="line"><span class="built_in">cd</span> yasm-1.3.0</span><br><span class="line"><span class="comment"># 安装</span></span><br><span class="line">./configure</span><br><span class="line">make &amp;&amp; make install</span><br></pre></td></tr></table></figure>
+<h2 id="安装ffmpeg"><a href="#安装ffmpeg" class="headerlink" title="安装ffmpeg"></a>安装ffmpeg</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 下载</span></span><br><span class="line">wget http://www.ffmpeg.org/releases/ffmpeg-4.2.1.tar.gz</span><br><span class="line"><span class="comment"># 解压</span></span><br><span class="line">tar -zxvf ffmpeg-4.2.1.tar.gz</span><br><span class="line"><span class="comment"># 进入目录</span></span><br><span class="line"><span class="built_in">cd</span> ffmpeg-4.2.1</span><br><span class="line"><span class="comment"># 安装</span></span><br><span class="line">./configure</span><br><span class="line">make &amp;&amp; make install</span><br></pre></td></tr></table></figure>
+<div class="note info"><h1 id="二丶配置"><a href="#二丶配置" class="headerlink" title="二丶配置"></a>二丶配置</h1></div>
+
+<h2 id="修改nginx配置文件"><a href="#修改nginx配置文件" class="headerlink" title="修改nginx配置文件"></a>修改nginx配置文件</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">vi /usr/local/nginx/conf/nginx.conf</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">rtmp &#123;    </span><br><span class="line">    server &#123;    </span><br><span class="line">        listen 1935;  <span class="comment">#监听的端口  </span></span><br><span class="line">        chunk_size 4000;</span><br><span class="line">        application live&#123;</span><br><span class="line">            live on;</span><br><span class="line">        &#125;</span><br><span class="line">        application hls &#123;  <span class="comment">#rtmp推流请求路径  </span></span><br><span class="line">            live on;    </span><br><span class="line">            hls on;    </span><br><span class="line">            hls_path /usr/local/nginx/html/hls;    </span><br><span class="line">            hls_fragment 5s;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="开启推送"><a href="#开启推送" class="headerlink" title="开启推送"></a>开启推送</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 首先开放防火墙端口</span></span><br><span class="line">firewall-cmd --zone=public --add-port=1935/tcp –permanent</span><br><span class="line"></span><br><span class="line"><span class="comment"># Rtsp转Rtmp 并推送到Nginx</span></span><br><span class="line"><span class="comment"># 这里的rtsp要用自己的地址 rtsp://用户名:密码@IP地址</span></span><br><span class="line">ffmpeg -rtsp_transport tcp -i <span class="string">&quot;rtsp://root:pass@10.1.30.11/axis-media/media.amp&quot;</span> -vcodec copy  -acodec copy -f flv <span class="string">&quot;rtmp://127.0.0.1:1935/live/&quot;</span></span><br></pre></td></tr></table></figure>
+<h2 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h2><p>将<code>rtmp://127.0.0.1:1935/live/</code>放入软件测试如下图1-1,将127.0.0.1换成你的IP地址</p>
+<img src="/2019/10/08/ffmpeg-nginx%E5%AE%9E%E7%8E%B0rtsp%E8%BD%ACrtmp/vlc.png" class="" title="1-1">
+]]></content>
+      <tags>
+        <tag>nginx</tag>
+        <tag>ffmpeg</tag>
+        <tag>rtsp</tag>
+        <tag>rtmp</tag>
+        <tag>rtsp转rtmp</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>离线安装gcc</title>
+    <url>/2019/10/30/%E7%A6%BB%E7%BA%BF%E5%AE%89%E8%A3%85gcc/</url>
+    <content><![CDATA[<blockquote class="blockquote-center">离线安装gcc</blockquote>
+
+<span id="more"></span>
+
+<div class="note info"><h1 id="一丶安装gcc"><a href="#一丶安装gcc" class="headerlink" title="一丶安装gcc"></a>一丶安装gcc</h1></div>
+
+<p>我们在Linux上源码安装一些软件的时候,需要有gcc环境,如果联网可以直接yum安装,但是部署的时可能是没网络的.</p>
+<p> <a href="http://mirrors.163.com/centos/6/os/x86_64/Packages/">网易离线包地址</a><br> <a href="http://mirrors.aliyun.com/centos/7/os/x86_64/Packages/">阿里离线包地址</a></p>
+<ol>
+<li><p>找到下面的这些包<br>mpfr-3.1.1-4.el7.x86_64.rpm<br>libmpc-1.0.1-3.el7.x86_64.rpm<br>kernel-headers-3.10.0-123.el7.x86_64.rpm<br>glibc-headers-2.17-55.el7.x86_64.rpm<br>glibc-devel-2.17-55.el7.x86_64.rpm<br>cpp-4.8.2-16.el7.x86_64.rpm<br>gcc-4.8.2-16.el7.x86_64.rpm</p>
+</li>
+<li><p>使用软件打包成tar包上传到服务器上</p>
+</li>
+<li><p>解压<br><code>tar -xvf 包名.tar</code></p>
+</li>
+<li><p>统一安装<br><code>rpm -Uvh *.rpm --nodeps --force</code></p>
+</li>
+</ol>
+<p>到此gcc就安装完成了</p>
+<div class="note warning"><h1 id="二丶拓展安装一些模块"><a href="#二丶拓展安装一些模块" class="headerlink" title="二丶拓展安装一些模块"></a>二丶拓展安装一些模块</h1></div>
+
+<p>我们安装gcc一般是为了安装一些需要源码编译的模块或者软件,比如安装nginx,还要安装许多模块pcre、zlib、openssl这里我们就来拓展一下这些模块的安装</p>
+<h2 id="安装pcre"><a href="#安装pcre" class="headerlink" title="安装pcre"></a>安装pcre</h2><blockquote>
+<p>通过wget一律下载到&#x2F;usr&#x2F;local&#x2F;src目录下,方便寻找,比如安装nginx添加依赖模块就需要用到源码路径<br>nginx也可指定安装软件路径</p>
+</blockquote>
+<p>pcre 的作用是让Nginx支持Rewrite功能。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 下载</span></span><br><span class="line">wget https://ftp.pcre.org/pub/pcre/pcre-8.35.tar.gz</span><br><span class="line">tar -zxvf pcre-8.35.tar.gz</span><br><span class="line"><span class="built_in">cd</span> pcre-8.35</span><br><span class="line">./configure</span><br><span class="line">make &amp;&amp; make install</span><br></pre></td></tr></table></figure>
+<h2 id="安装zlib"><a href="#安装zlib" class="headerlink" title="安装zlib"></a>安装zlib</h2><p>zlib 的作用是让Nginx支持gzip功能。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">wget http://www.zlib.net/zlib-1.2.11.tar.gz</span><br><span class="line">tar -zxvf zlib-1.2.11.tar.gz</span><br><span class="line"><span class="built_in">cd</span> zlib-1.2.11</span><br><span class="line">./configure</span><br><span class="line">make &amp;&amp; make install</span><br></pre></td></tr></table></figure>
+<h2 id="安装openssl"><a href="#安装openssl" class="headerlink" title="安装openssl"></a>安装openssl</h2><p>openssl 的作用是让Nginx支持ssl功能。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">wget https://www.openssl.org/source/openssl-1.0.2n.tar.gz</span><br><span class="line">tar -zxvf openssl-1.0.2n.tar.gz</span><br><span class="line"><span class="built_in">cd</span> openssl-1.0.2n</span><br><span class="line">./config</span><br><span class="line">make &amp;&amp; make install</span><br></pre></td></tr></table></figure>
+
+
+
+]]></content>
+      <tags>
+        <tag>安装gcc</tag>
+        <tag>安装pcre</tag>
+        <tag>安装zlib</tag>
+        <tag>安装openssl</tag>
+        <tag>离线安装gcc</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Docker从入门到放弃</title>
+    <url>/2019/09/12/Docker%E4%BB%8E%E5%85%A5%E9%97%A8%E5%88%B0%E6%94%BE%E5%BC%83/</url>
+    <content><![CDATA[<blockquote class="blockquote-center">Docker</blockquote>
+
+<span id="more"></span>
+
+<div class="note info"><h1 id="一、认识Docker"><a href="#一、认识Docker" class="headerlink" title="一、认识Docker"></a>一、认识Docker</h1></div>
+
+<p>Docker简单理解成Linux工厂，可以虚拟出很多linux。然后你可以在里面安装好各种软件和环境，打成包(镜像)，想用的时候可以秒起系统(容器)，然后发现之前配好的环境全部都有了。而且启动快，各个启动的小LINUX（容器）之间完全隔离</p>
+<div class="note info"><h1 id="二、安装Docker到CentOS7"><a href="#二、安装Docker到CentOS7" class="headerlink" title="二、安装Docker到CentOS7"></a>二、安装Docker到CentOS7</h1></div>
+
+<p>其他版本可以参考文末连接</p>
+<h2 id="卸载旧版本"><a href="#卸载旧版本" class="headerlink" title="卸载旧版本"></a>卸载旧版本</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo yum remove docker \</span><br><span class="line">                docker-client \</span><br><span class="line">                docker-client-latest \</span><br><span class="line">                docker-common \</span><br><span class="line">                docker-latest \</span><br><span class="line">                docker-latest-logrotate \</span><br><span class="line">                docker-logrotate \</span><br><span class="line">                docker-engine</span><br></pre></td></tr></table></figure>
+<h2 id="配置yum镜像加速"><a href="#配置yum镜像加速" class="headerlink" title="配置yum镜像加速"></a>配置yum镜像加速</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">mv</span> /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo.backup</span><br><span class="line">wget -O /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-7.repo</span><br><span class="line">yum clean all</span><br><span class="line">yum makecache</span><br></pre></td></tr></table></figure>
+
+<h2 id="设置Docker储存库"><a href="#设置Docker储存库" class="headerlink" title="设置Docker储存库"></a>设置Docker储存库</h2><p>1、安装所需软件包</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo yum install -y yum-utils \</span><br><span class="line">device-mapper-persistent-data \</span><br><span class="line">lvm2</span><br></pre></td></tr></table></figure>
+<p>2、设置储存库</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment">#官方镜像</span></span><br><span class="line"><span class="comment">#sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#阿里云镜像(推荐)</span></span><br><span class="line">sudo yum-config-manager --add-repo http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo </span><br></pre></td></tr></table></figure>
+
+<h2 id="安装Docker-ce版本（社区版）"><a href="#安装Docker-ce版本（社区版）" class="headerlink" title="安装Docker-ce版本（社区版）"></a>安装Docker-ce版本（社区版）</h2><p>1、安装最新版Docker Engine - Community 和 containerd，想安装指定版本看第二步</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo yum install docker-ce docker-ce-cli containerd.io</span><br></pre></td></tr></table></figure>
+<p>如果提示您接受GPG密钥，请验证指纹是否匹配 <code>060A 61C5 1B55 8A7F 742B 77AA C52F EB6B 621E 9F35</code>，如果是，则接受它。</p>
+<p>2、安装指定版本Docker，列出版本：（从高到低）</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">yum list docker-ce --showduplicates | <span class="built_in">sort</span> -r</span><br><span class="line"></span><br><span class="line">docker-ce.x86_64  3:18.09.1-3.el7                     docker-ce-stable</span><br><span class="line">docker-ce.x86_64  3:18.09.0-3.el7                     docker-ce-stable</span><br><span class="line">docker-ce.x86_64  18.06.1.ce-3.el7                    docker-ce-stable</span><br><span class="line">docker-ce.x86_64  18.06.0.ce-3.el7                    docker-ce-stable</span><br></pre></td></tr></table></figure>
+
+<p>返回的列表取决于启用的存储库，并且特定于您的CentOS版本（<code>.el7</code>代表CentOS7）。<br>根据软件包名称（<code>docker-ce</code>）加上列出的版本字符串（<code>第二列</code>），从<code>:</code>到第一个连字符<code>-</code><br>例如：<code>docker-ce-18.09.1</code></p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo yum install docker-ce-&lt;VERSION_STRING&gt; docker-ce-cli-&lt;VERSION_STRING&gt; containerd.io</span><br></pre></td></tr></table></figure>
+<p>这时Docker已安装但尚未启动。docker会自动创建docker组但不会添加用户进去 </p>
+<p>需求：docker 命令与 Docker 引擎通讯之间通过 UnixSocket ，但是能够有权限访问 UnixSocket 的用户只有 root 和 docker 用户组的用户才能够进行访问，所以我们需要建立一个 docker 用户组，并且将需要访问 docker 的用户添加到这一个用户组当中来。</p>
+<p>添加用户到docker组</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo usermod -a -G docker &lt;用户名&gt;</span><br></pre></td></tr></table></figure>
+<p>查看是否添加进去</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo <span class="built_in">groups</span> &lt;用户名&gt;</span><br></pre></td></tr></table></figure>
+
+<p>3、启动Docker</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo systemctl <span class="built_in">enable</span> docker</span><br><span class="line">sudo systemctl start docker</span><br></pre></td></tr></table></figure>
+<p>4、配置镜像加速</p>
+<p>使用<a href="https://cr.console.aliyun.com/">阿里云镜像加速地址</a>，登录后在左侧找到 <strong>Docker Hub 镜像站点</strong> 然后复制自己的加速地址</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo <span class="built_in">mkdir</span> -p /etc/docker</span><br><span class="line">sudo <span class="built_in">tee</span> /etc/docker/daemon.json &lt;&lt;-<span class="string">&#x27;EOF&#x27;</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;registry-mirrors&quot;</span>: [<span class="string">&quot;https://9ybg794r.mirror.aliyuncs.com&quot;</span>]</span><br><span class="line">&#125;</span><br><span class="line">EOF</span><br><span class="line">sudo systemctl daemon-reload</span><br><span class="line">sudo systemctl restart docker</span><br></pre></td></tr></table></figure>
+
+<p>5、启动一个<code>hello-world</code>,验证是否安装成功</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo docker run hello-world</span><br></pre></td></tr></table></figure>
+<p>此命令下载测试图像并在容器中运行。容器运行时，它会打印参考消息并退出。</p>
+<p>安装完成</p>
+<h3 id="番外"><a href="#番外" class="headerlink" title="番外"></a>番外</h3><p>通常我们的var目录不是很大，但是docker下载的镜像多了很占内存，所以我们换个地方，并且增加一个软连接</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">mv</span> /var/lib/docker /home/</span><br><span class="line"><span class="built_in">ln</span> -s /home/docker/ /var/lib/</span><br><span class="line"><span class="comment">### restart docker now</span></span><br></pre></td></tr></table></figure>
+
+<p>安装主要是对官网安装的翻译简化，走一遍完整流程学习记录</p>
+<div class="note info"><h1 id="三、常用docker命令"><a href="#三、常用docker命令" class="headerlink" title="三、常用docker命令"></a>三、常用docker命令</h1></div>
+
+<h3 id="1、修改配置重启"><a href="#1、修改配置重启" class="headerlink" title="1、修改配置重启"></a>1、修改配置重启</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">systemctl daemon-reload</span><br><span class="line">systemctl restart docker</span><br></pre></td></tr></table></figure>
+
+<h3 id="2、拉取镜像"><a href="#2、拉取镜像" class="headerlink" title="2、拉取镜像"></a>2、拉取镜像</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">docker pull [OPTIONS] NAME[:TAG|@DIGEST]</span><br></pre></td></tr></table></figure>
+
+<h3 id="3、列出镜像"><a href="#3、列出镜像" class="headerlink" title="3、列出镜像"></a>3、列出镜像</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">docker images [OPTIONS] [REPOSITORY[:TAG]]</span><br></pre></td></tr></table></figure>
+
+<h3 id="4、列出容器"><a href="#4、列出容器" class="headerlink" title="4、列出容器"></a>4、列出容器</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">docker ps [OPTIONS]</span><br></pre></td></tr></table></figure>
+<table>
+<thead>
+<tr>
+<th align="left">名称</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>--all , -a</code></td>
+<td align="left">显示所有容器（默认显示为正在运行）</td>
+</tr>
+</tbody></table>
+<h3 id="5、启动容器"><a href="#5、启动容器" class="headerlink" title="5、启动容器"></a>5、启动容器</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">docker run [OPTIONS] IMAGE [COMMAND] [ARG...]</span><br></pre></td></tr></table></figure>
+<table>
+<thead>
+<tr>
+<th align="left">名称</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>--name</code></td>
+<td align="left">容器名称</td>
+</tr>
+<tr>
+<td align="left"><code>--detach , -d</code></td>
+<td align="left">在后台运行容器并打印容器ID</td>
+</tr>
+<tr>
+<td align="left"><code>--publish , -p</code></td>
+<td align="left">端口映射</td>
+</tr>
+<tr>
+<td align="left"><code>--volume , -v</code></td>
+<td align="left">目录映射</td>
+</tr>
+<tr>
+<td align="left"><code>--restart</code></td>
+<td align="left">重启策略，always：始终重启</td>
+</tr>
+<tr>
+<td align="left"><code>--env , -e</code></td>
+<td align="left">设置环境变量</td>
+</tr>
+<tr>
+<td align="left"><code>--rm</code></td>
+<td align="left">退出时自动删除容器</td>
+</tr>
+</tbody></table>
+<h3 id="6、进入容器"><a href="#6、进入容器" class="headerlink" title="6、进入容器"></a>6、进入容器</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">docker <span class="built_in">exec</span> [OPTIONS] CONTAINER COMMAND [ARG...]</span><br></pre></td></tr></table></figure>
+<table>
+<thead>
+<tr>
+<th align="left">名称</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>--interactive , -i</code></td>
+<td align="left">展示容器输入信息STDIN</td>
+</tr>
+<tr>
+<td align="left"><code>--tty , -t</code></td>
+<td align="left">命令行交互模式</td>
+</tr>
+<tr>
+<td align="left"><code>--detach, -d</code></td>
+<td align="left">后台运行模式，在后台执行命令相关命令</td>
+</tr>
+<tr>
+<td align="left"><code>--env, -e</code></td>
+<td align="left">设置环境变量</td>
+</tr>
+</tbody></table>
+<h3 id="7、停止、启动、查看容器"><a href="#7、停止、启动、查看容器" class="headerlink" title="7、停止、启动、查看容器"></a>7、停止、启动、查看容器</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">docker stop CONTAINER [ps OPTIONS]</span><br><span class="line">docker start [OPTIONS] CONTAINER [CONTAINER...]</span><br><span class="line">docker stats [OPTIONS] [CONTAINER...]</span><br></pre></td></tr></table></figure>
+
+<h3 id="8、删除容器"><a href="#8、删除容器" class="headerlink" title="8、删除容器"></a>8、删除容器</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">docker <span class="built_in">rm</span> CONTAINER</span><br><span class="line"></span><br><span class="line"><span class="comment"># 停止包含redis关键字的所有容器</span></span><br><span class="line">docker <span class="built_in">rm</span> `docker ps -a| grep redis | awk <span class="string">&#x27;&#123;print $1&#125;&#x27;</span> `</span><br></pre></td></tr></table></figure>
+<table>
+<thead>
+<tr>
+<th align="left">名称</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>--force , -f</code></td>
+<td align="left">强制删除正在运行的容器（使用SIGKILL）</td>
+</tr>
+<tr>
+<td align="left"><code>--link , -l</code></td>
+<td align="left">删除指定的链接</td>
+</tr>
+<tr>
+<td align="left"><code>--volumes , -v</code></td>
+<td align="left">删除与容器关联的卷</td>
+</tr>
+</tbody></table>
+<h3 id="9、删除镜像"><a href="#9、删除镜像" class="headerlink" title="9、删除镜像"></a>9、删除镜像</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">docker rmi IMAGE </span><br></pre></td></tr></table></figure>
+<h3 id="10、拷贝文件"><a href="#10、拷贝文件" class="headerlink" title="10、拷贝文件"></a>10、拷贝文件</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">docker <span class="built_in">cp</span> [OPTIONS] CONTAINER:SRC_PATH DEST_PATH|-</span><br><span class="line">docker <span class="built_in">cp</span> [OPTIONS] SRC_PATH|- CONTAINER:DEST_PATH</span><br><span class="line"></span><br><span class="line">把本机opt/app 文件夹拷贝到容器opt下</span><br><span class="line">docker <span class="built_in">cp</span> /opt/app &lt;容器ID/容器名称&gt;:/opt/</span><br><span class="line"></span><br><span class="line">把容器opt/app 文件夹拷贝到本机opt下</span><br><span class="line">docker <span class="built_in">cp</span>  &lt;容器ID/容器名称&gt;:/opt/app /opt/</span><br></pre></td></tr></table></figure>
+
+<h3 id="11、修改容器配置"><a href="#11、修改容器配置" class="headerlink" title="11、修改容器配置"></a>11、修改容器配置</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">docker update [OPTIONS] CONTAINER [CONTAINER...]</span><br></pre></td></tr></table></figure>
+<table>
+<thead>
+<tr>
+<th align="left">名称</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>--restart</code></td>
+<td align="left">重新启动策略</td>
+</tr>
+</tbody></table>
+<h3 id="12、修改容器名称"><a href="#12、修改容器名称" class="headerlink" title="12、修改容器名称"></a>12、修改容器名称</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">docker rename CONTAINER NEW_NAME</span><br></pre></td></tr></table></figure>
+
+<h3 id="13、修改容器配置，比如挂载卷"><a href="#13、修改容器配置，比如挂载卷" class="headerlink" title="13、修改容器配置，比如挂载卷"></a>13、修改容器配置，比如挂载卷</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 停止docker</span></span><br><span class="line">systemctl stop docker</span><br><span class="line"><span class="comment"># 修改配置文件config.v2.json和hostconfig.json</span></span><br><span class="line"><span class="comment">#（比如我们修改端口映射，发现两个文件都记录了，那么全部都改，只有一个文件记录了只改一个）</span></span><br><span class="line">vim /var/lib/docker/containers/&lt;container-ID&gt;/hostconfig.json</span><br><span class="line"><span class="comment"># 重启docker</span></span><br><span class="line">systemctl restart docker</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>参考文章</p>
+</blockquote>
+<p><a href="https://docs.docker.com/install/linux/docker-ce/centos/">Docker安装文档</a><br><a href="https://docs.docker.com/engine/reference/commandline/docker/">DockerCli文档</a></p>
+]]></content>
+      <tags>
+        <tag>Docker</tag>
+        <tag>Linux</tag>
+        <tag>运维</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Git基础教程</title>
+    <url>/2019/09/10/Git%E5%9F%BA%E7%A1%80%E6%95%99%E7%A8%8B/</url>
+    <content><![CDATA[<blockquote class="blockquote-center">Git基础入门, 主要介绍一些常用命令</blockquote>
+<span id="more"></span>
+
+<div class="note info"><h1 id="一丶认识Git"><a href="#一丶认识Git" class="headerlink" title="一丶认识Git"></a>一丶认识Git</h1></div>
+
+<p>Git是一个开源的分布式的版本控制系统。它可以追踪任何变化的文件，支持完整的工作流程，来保证数据的完整性和处理事务的高效性。<br>可他的作用到底在哪呢?<br>当我们进行开发的时候,每时每刻都在对文件进行修改。但是当我们发现问题想要回退怎么办呢?难道每次修改,把文件复制一份保存下来?<br>这样虽然可以,但时间一长你就会发现越来越多越来越难以管理。而且我们一般都是多人开发,难道我改了一个文件还要把东西发给同事?<br>Git的作用就在这里了,它能够帮你管理,你只需要专注于工作。</p>
+<h2 id="Git工作流程"><a href="#Git工作流程" class="headerlink" title="Git工作流程"></a>Git工作流程</h2><img src="/2019/09/10/Git%E5%9F%BA%E7%A1%80%E6%95%99%E7%A8%8B/Git%E5%B7%A5%E4%BD%9C%E6%B5%81%E7%A8%8B.png" class="" title="1-1_工作流程">
+
+<p>几个专用名词的译名如下</p>
+<ul>
+<li>Workspace：工作区</li>
+<li>Index &#x2F; Stage：暂存区</li>
+<li>Repository：仓库区（或本地仓库）</li>
+<li>Remote：远程仓库</li>
+</ul>
+<p>图上一共有六个箭头,代表着六个常用的命令,下面就来介绍一下它们</p>
+<ul>
+<li>首先通过<code>git clone [远端仓库地址]</code>克隆一个仓库到本地</li>
+<li>对文件进行修改,修改完成之后<code>git add [文件名]</code>到暂存区(并不需要把所有修改的文件都添加到暂存区)</li>
+<li>确认无误之后<code>git commit -m &#39;本次提交描述&#39;</code>到仓库中(只会提交你添加到暂存区的修改)</li>
+<li>当发现自己写的代码有bug,而且这个时候还没有推送到远端,那么就用<code>git checkout -- [文件名]</code>撤销修改</li>
+<li>没有发现bug,在通过<code>git push [远端名] [本地分支名]</code>推送到远端</li>
+<li>这个时候同事通过<code>git pull</code>拉取你推送的代码到本地,这样就完成了一整个流程</li>
+</ul>
+<h2 id="关于-暂存区-工作区-版本库"><a href="#关于-暂存区-工作区-版本库" class="headerlink" title="关于 暂存区 工作区 版本库"></a>关于 暂存区 工作区 版本库</h2><ol>
+<li><p>我们本地是同时存在工作区和版本库的,版本库中又包含stage( 暂存区 )和仓库分支(下面用master代替) <strong>如下图</strong></p>
+</li>
+<li><p>我们把文件往Git版本库里添加的时候，是分两步执行的：</p>
+</li>
+<li><p>第一步是用git add把文件添加进去，实际上就是把文件修改添加到暂存区；</p>
+</li>
+<li><p>第二步是用git commit提交更改，实际上就是把暂存区的所有内容提交到当前分支。<br>因为我们创建Git版本库时，Git自动为我们创建了唯一一个master分支，所以，现在，git commit就是往master分支上提交更改。</p>
+</li>
+<li><p>你可以简单理解为，需要提交的文件修改通通放到暂存区，然后，一次性提交暂存区的所有修改。</p>
+</li>
+</ol>
+<img src="/2019/09/10/Git%E5%9F%BA%E7%A1%80%E6%95%99%E7%A8%8B/0.jpg" class="" title="工作区暂存区图解">
+
+<p><code>git diff</code> 是工作区和暂存区进行比较, <code>git diff --cached</code> 是暂存区和master进行比较</p>
+<ol>
+<li><p>一开始没有做修改时,三个地方的代码全部相同</p>
+</li>
+<li><p>修改后工作区发生变化,使用 <code>git diff</code> 可以检测出工作区和暂存区的不同, 而 <code>git diff --cached</code> 什么都检测不到,因为我们上面说过 <code>git add</code> 是将修改添加到了暂存区,而我们现在只是修改了工作区,并没有使用 <code>git add</code> 所以暂存区和master目前还是相同的</p>
+</li>
+<li><p>然后我们使用 ‘git add 修改的文件.txt’ 这时工作区修改同步到暂存区 <code>git diff</code> 什么都检测不到,而<code>git diff --cached</code> 反而可以检测到了</p>
+</li>
+</ol>
+<div class="note info"><h1 id="二丶基础命令介绍"><a href="#二丶基础命令介绍" class="headerlink" title="二丶基础命令介绍"></a>二丶基础命令介绍</h1></div>
+
+<p>我们使用git都是要用到远端仓库的,但是我们通过<code>ssh</code>地址克隆远端仓库的时候会发现没有权限,所以我们先介绍一下如何在GitHub上配置秘钥</p>
+<h2 id="配置GitHub秘钥"><a href="#配置GitHub秘钥" class="headerlink" title="配置GitHub秘钥"></a>配置GitHub秘钥</h2><ul>
+<li><p>查看本地git账户信息</p>
+</li>
+<li><p><code>git config user.user</code></p>
+</li>
+<li><p><code>git config user.email</code></p>
+</li>
+<li><p>修改本地git账户信息<br> <code>git config --global user.name &quot;[用户名]&quot;</code><br> <code>git config --global user.email &quot;[邮件地址]&quot;</code></p>
+</li>
+<li><p>打开本地命令行</p>
+</li>
+<li><p>执行<code>ssh-keygen -t rsa -b 4096 -C &quot;邮件地址&quot;</code></p>
+</li>
+<li><p>点三次回车,这样会把秘钥保存在默认位置</p>
+</li>
+<li><p>找到秘钥<code>C:\Users\zhaodi\.ssh\id_rsa.pub</code>用记事本打开复制</p>
+</li>
+<li><p>找不到的执行<code>type %userprofile%\.ssh\id_rsa.pub | clip</code>命令直接复制到剪贴板</p>
+</li>
+<li><p>复制到<a href="https://github.com/settings/keys">New SSH key</a> 详见下一步</p>
+</li>
+<li><p>打开github登录 &gt; 点击右上角个人头像 &gt; settings &gt; SSH and GPG keys &gt; New SSH key &gt; 填写Title和Key &gt; Add SSH key</p>
+</li>
+<li><p>配置完成依然无法推送</p>
+</li>
+<li><p>查看远端的路径是否已经改成git开头地址</p>
+</li>
+<li><p>如果使用小乌堆推送，检查网络中的ssh客户端是否是git的<code>C:\Program Files\Git\usr\bin\ssh.exe</code>,如果不是改成你的路径</p>
+</li>
+</ul>
+<h2 id="配置git代理"><a href="#配置git代理" class="headerlink" title="配置git代理"></a>配置git代理</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 设置</span></span><br><span class="line">git config --global http.proxy socks5://127.0.0.1:10809</span><br><span class="line">git config --global https.proxy socks5://127.0.0.1:10809</span><br><span class="line"></span><br><span class="line"><span class="comment"># 移除</span></span><br><span class="line">git config --global --<span class="built_in">unset</span> http.proxy</span><br><span class="line">git config --global --<span class="built_in">unset</span> https.proxy</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看</span></span><br><span class="line">git config --global --get http.proxy</span><br><span class="line">git config --global --get https.proxy</span><br></pre></td></tr></table></figure>
+
+<h2 id="创建仓库"><a href="#创建仓库" class="headerlink" title="创建仓库"></a>创建仓库</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 将当前目录变成一个Git仓库,生成一个.git文件夹,这个文件夹就是git用来管理仓库的,不要修改它</span></span><br><span class="line">git init</span><br><span class="line"></span><br><span class="line"><span class="comment"># 将远端与本地创建的仓库关联起来</span></span><br><span class="line"><span class="comment"># 当我们第一次关联,而且本地有过提交,这样我们是推送不上去的,这时我们就要加上--allow-unrelated-history参数</span></span><br><span class="line">git remote add origin [远端仓库地址]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 克隆远端仓库</span></span><br><span class="line">git <span class="built_in">clone</span> [远端仓库地址]</span><br></pre></td></tr></table></figure>
+
+<h2 id="修改、提交、推送-新增和删除对存储库来说也是一种修改"><a href="#修改、提交、推送-新增和删除对存储库来说也是一种修改" class="headerlink" title="修改、提交、推送 (新增和删除对存储库来说也是一种修改)"></a>修改、提交、推送 (新增和删除对存储库来说也是一种修改)</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 将文件添加到暂存区,无论这个文件是本身存在的,还是新增的</span></span><br><span class="line">git add 修改的文件.txt</span><br><span class="line">git add 新增的文件1.txt 新增的文件2.txt</span><br><span class="line"></span><br><span class="line"><span class="comment"># rm相当于先手动删除,再git add 删除的文件.txt</span></span><br><span class="line"><span class="comment"># 但是我们也可以加上--cached将它从版本库中移除,但是仍保留在磁盘中 (相当于在下载器中删除任务,但是不删除文件)</span></span><br><span class="line">git <span class="built_in">rm</span> 删除的文件.txt</span><br><span class="line"></span><br><span class="line"><span class="comment"># 将暂存区的所有修改提交到本地版本库中, -m 表示本次提交备注的信息</span></span><br><span class="line">git commit -m <span class="string">&quot;新增了三个txt文件&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 推送到远端 -u参数 将本地的master分支推送到origin主机，同时指定origin为默认主机，后面就可以不加任何参数使用git push了</span></span><br><span class="line">git push -u origin master</span><br><span class="line"></span><br><span class="line"><span class="comment"># 指定关联远端分支</span></span><br><span class="line">git branch --set-upstream-to=origin/developer developer</span><br></pre></td></tr></table></figure>
+
+<h2 id="撤销修改和版本回退"><a href="#撤销修改和版本回退" class="headerlink" title="撤销修改和版本回退"></a>撤销修改和版本回退</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 撤销修改</span></span><br><span class="line"><span class="comment"># 第一种情况 我们只进行了修改还没有使用git add那么可以直接使用下面的命令丢弃工作区修改就OK</span></span><br><span class="line">git checkout -- readme.txt</span><br><span class="line"><span class="comment"># 第二种情况 我们不仅修改了还git add到了暂存区如何办呢?先使用下面的命令丢弃暂存区修改,再用第一条命令丢弃工作区修改就OK</span></span><br><span class="line">git reset HEAD readme.txt</span><br><span class="line"></span><br><span class="line"><span class="comment"># 版本回退</span></span><br><span class="line"><span class="comment"># 首先，Git必须知道当前版本是哪个版本,在Git中，用HEAD表示当前版本，也就是最新的提交1094adb...</span></span><br><span class="line"><span class="comment"># 上一个版本就是HEAD^，上上一个版本就是HEAD^^，上十个版本就可以直接加数字HEAD~10</span></span><br><span class="line"><span class="comment"># 使用下面这个命令便退回了上个版本,--hard参数会重置工作区和暂存区</span></span><br><span class="line">git reset --hard HEAD^</span><br><span class="line"></span><br><span class="line"><span class="comment"># 我们回退代码之后后悔了怎么办?,Git提供了一个命令git reflog用来记录你的每一次命令：</span></span><br><span class="line">git reflog</span><br><span class="line">e475afc HEAD@&#123;1&#125;: reset: moving to HEAD^</span><br><span class="line">1094adb (HEAD -&gt; master) HEAD@&#123;2&#125;: commit: 修改</span><br><span class="line"></span><br><span class="line"><span class="comment"># 然后使用版本回退命令，这样我们又回到了最初的版本</span></span><br><span class="line">git reset --hard 1094a</span><br></pre></td></tr></table></figure>
+
+<h2 id="分支管理"><a href="#分支管理" class="headerlink" title="分支管理"></a>分支管理</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 创建一个分支</span></span><br><span class="line">git branch developer</span><br><span class="line"></span><br><span class="line"><span class="comment"># 切换到创建的分支</span></span><br><span class="line">git checkout developer</span><br><span class="line"></span><br><span class="line"><span class="comment"># 我们也可以加上 -b 参数创建并切换</span></span><br><span class="line">git checkout -b developer</span><br><span class="line"></span><br><span class="line"><span class="comment"># 列出所有本地分支,当前分支前会加上*号</span></span><br><span class="line">git branch</span><br><span class="line"></span><br><span class="line"><span class="comment"># 合并分支到当前分支,加--no-ff参数代表禁用Fast forward模式,可以看到合并记录</span></span><br><span class="line">git merge developer</span><br><span class="line"></span><br><span class="line"><span class="comment"># 删除分支</span></span><br><span class="line">git branch -d developer</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看远端仓库,可以看到关联信息等</span></span><br><span class="line">git remote show origin</span><br><span class="line"></span><br><span class="line"><span class="comment"># 指定关联远端分支</span></span><br><span class="line">git branch --set-upstream-to=origin/developer developer</span><br></pre></td></tr></table></figure>
+
+<h2 id="查看状态以及历史"><a href="#查看状态以及历史" class="headerlink" title="查看状态以及历史"></a>查看状态以及历史</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 详细信息</span></span><br><span class="line">git <span class="built_in">log</span></span><br><span class="line"><span class="comment"># 单行信息</span></span><br><span class="line">git <span class="built_in">log</span> --pretty=oneline</span><br><span class="line"></span><br><span class="line">git status    <span class="comment">#完整信息</span></span><br><span class="line">git status -s <span class="comment">#简略信息</span></span><br><span class="line">git diff      <span class="comment">#显然这些信息太过于模糊,所以还有`git diff`帮助你查看详细信息</span></span><br></pre></td></tr></table></figure>
+
+<div class="note info"><h1 id="三丶服务器搭建git仓库"><a href="#三丶服务器搭建git仓库" class="headerlink" title="三丶服务器搭建git仓库"></a>三丶服务器搭建git仓库</h1></div>
+
+<h2 id="1-安装"><a href="#1-安装" class="headerlink" title="1.安装"></a>1.安装</h2><h2 id="2-配置"><a href="#2-配置" class="headerlink" title="2.配置"></a>2.配置</h2><ol>
+<li><p><strong>新建用户来运行git</strong></p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ adduser git</span><br><span class="line">$ passwd git</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>导入用户公钥</strong></p>
+</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 公钥导入到/home/git/.ssh/authorized_keys文件里，一行一个。没有对应的文件自己建立</span></span><br><span class="line"><span class="comment"># 不知道本地公钥的如何获取的上移二丶基础命令介绍的配置GitHub秘钥</span></span><br><span class="line">$ <span class="built_in">mkdir</span> -p /home/git/.ssh</span><br><span class="line">$ <span class="built_in">touch</span> authorized_keys</span><br></pre></td></tr></table></figure>
+<ol start="3">
+<li><strong>新建仓库</strong></li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ git init --bare sample.git</span><br></pre></td></tr></table></figure>
+
+<ol start="4">
+<li><strong>修改权限</strong></li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ <span class="built_in">chown</span> -R git:git /home/git/.ssh</span><br><span class="line">$ <span class="built_in">chown</span> -R git:git /home/git/sample.git</span><br></pre></td></tr></table></figure>
+
+<ol start="5">
+<li><strong>设置git用户禁用shell登录</strong></li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ vi /etc/passwd</span><br><span class="line"><span class="comment"># git:x:1001:1001:,,,:/home/git:/bin/bash 改为 git:x:1001:1001:,,,:/home/git:/usr/bin/git-shell</span></span><br><span class="line"><span class="comment"># 只用修改git:后面的东西就行了</span></span><br></pre></td></tr></table></figure>
+<ol start="6">
+<li><strong>克隆远程仓库</strong></li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ git <span class="built_in">clone</span> git@server:/srv/sample.git</span><br></pre></td></tr></table></figure>
+
+<div class="note info"><h1 id="四丶常用命令"><a href="#四丶常用命令" class="headerlink" title="四丶常用命令"></a>四丶常用命令</h1></div>
+
+<h2 id="1-配置"><a href="#1-配置" class="headerlink" title="1. 配置"></a>1. 配置</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 显示当前的Git配置</span></span><br><span class="line">$ git config --list</span><br><span class="line"></span><br><span class="line"><span class="comment"># 编辑Git配置文件</span></span><br><span class="line">$ git config -e [--global]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置提交代码时的用户信息</span></span><br><span class="line">$ git config [--global] user.name <span class="string">&quot;[name]&quot;</span></span><br><span class="line">$ git config [--global] user.email <span class="string">&quot;[email address]&quot;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="2-增加丶删除文件"><a href="#2-增加丶删除文件" class="headerlink" title="2. 增加丶删除文件"></a>2. 增加丶删除文件</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 添加指定文件到暂存区</span></span><br><span class="line">$ git add [file1] [file2] ...</span><br><span class="line"></span><br><span class="line"><span class="comment"># 添加指定目录到暂存区，包括子目录</span></span><br><span class="line">$ git add [<span class="built_in">dir</span>]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 添加当前目录的所有文件到暂存区</span></span><br><span class="line">$ git add .</span><br><span class="line"></span><br><span class="line"><span class="comment"># 添加每个变化前，都会要求确认</span></span><br><span class="line"><span class="comment"># 对于同一个文件的多处变化，可以实现分次提交</span></span><br><span class="line">$ git add -p</span><br><span class="line"></span><br><span class="line"><span class="comment"># 删除工作区文件，并且将这次删除放入暂存区</span></span><br><span class="line">$ git <span class="built_in">rm</span> [file1] [file2] ...</span><br><span class="line"></span><br><span class="line"><span class="comment"># 停止追踪指定文件，但该文件会保留在工作区</span></span><br><span class="line">$ git <span class="built_in">rm</span> --cached [file]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 改名文件，并且将这个改名放入暂存区</span></span><br><span class="line">$ git <span class="built_in">mv</span> [file-original] [file-renamed]</span><br></pre></td></tr></table></figure>
+
+<h2 id="3-代码提交"><a href="#3-代码提交" class="headerlink" title="3. 代码提交"></a>3. 代码提交</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 提交暂存区到仓库区</span></span><br><span class="line">$ git commit -m [message]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 提交暂存区的指定文件到仓库区</span></span><br><span class="line">$ git commit [file1] [file2] ... -m [message]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 提交工作区自上次commit之后的变化，直接到仓库区</span></span><br><span class="line">$ git commit -a</span><br><span class="line"></span><br><span class="line"><span class="comment"># 提交时显示所有diff信息</span></span><br><span class="line">$ git commit -v</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用一次新的commit，替代上一次提交</span></span><br><span class="line"><span class="comment"># 如果代码没有任何新变化，则用来改写上一次commit的提交信息</span></span><br><span class="line">$ git commit --amend -m [message]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 重做上一次commit，并包括指定文件的新变化</span></span><br><span class="line">$ git commit --amend [file1] [file2] ...</span><br></pre></td></tr></table></figure>
+
+<h2 id="4-分支管理"><a href="#4-分支管理" class="headerlink" title="4. 分支管理"></a>4. 分支管理</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 列出所有本地分支</span></span><br><span class="line">$ git branch</span><br><span class="line"></span><br><span class="line"><span class="comment"># 列出所有远程分支</span></span><br><span class="line">$ git branch -r</span><br><span class="line"></span><br><span class="line"><span class="comment"># 列出所有本地分支和远程分支</span></span><br><span class="line">$ git branch -a</span><br><span class="line"></span><br><span class="line"><span class="comment"># 新建一个分支，但依然停留在当前分支</span></span><br><span class="line">$ git branch [branch-name]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 新建一个分支，并切换到该分支</span></span><br><span class="line">$ git checkout -b [branch]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 新建一个分支，指向指定commit</span></span><br><span class="line">$ git branch [branch] [commit]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 新建一个分支，与指定的远程分支建立追踪关系</span></span><br><span class="line">$ git branch --track [branch] [remote-branch]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 切换到指定分支，并更新工作区</span></span><br><span class="line">$ git checkout [branch-name]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 切换到上一个分支</span></span><br><span class="line">$ git checkout -</span><br><span class="line"></span><br><span class="line"><span class="comment"># 建立追踪关系，在现有分支与指定的远程分支之间</span></span><br><span class="line">$ git branch --set-upstream [branch] [remote-branch]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 合并指定分支到当前分支</span></span><br><span class="line">$ git merge [branch]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 选择一个commit，合并进当前分支</span></span><br><span class="line">$ git cherry-pick [commit]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 删除分支</span></span><br><span class="line">$ git branch -d [branch-name]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 删除远程分支</span></span><br><span class="line">$ git push origin --delete [branch-name]</span><br><span class="line">$ git branch -dr [remote/branch]</span><br></pre></td></tr></table></figure>
+
+<h2 id="5-远程同步"><a href="#5-远程同步" class="headerlink" title="5. 远程同步"></a>5. 远程同步</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 下载远程仓库的所有变动</span></span><br><span class="line">$ git fetch [remote]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 显示所有远程仓库</span></span><br><span class="line">$ git remote -v</span><br><span class="line"></span><br><span class="line"><span class="comment"># 显示某个远程仓库的信息</span></span><br><span class="line">$ git remote show [remote]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 增加一个新的远程仓库，并命名</span></span><br><span class="line">$ git remote add [shortname] [url]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 取回远程仓库的变化，并与本地分支合并</span></span><br><span class="line">$ git pull [remote] [branch]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 上传本地指定分支到远程仓库</span></span><br><span class="line">$ git push [remote] [branch]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 强行推送当前分支到远程仓库，即使有冲突</span></span><br><span class="line">$ git push [remote] --force</span><br><span class="line"></span><br><span class="line"><span class="comment"># 推送所有分支到远程仓库</span></span><br><span class="line">$ git push [remote] --all</span><br></pre></td></tr></table></figure>
+
+<h2 id="6-撤销"><a href="#6-撤销" class="headerlink" title="6. 撤销"></a>6. 撤销</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 恢复暂存区的指定文件到工作区</span></span><br><span class="line">$ git checkout [file]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 恢复某个commit的指定文件到暂存区和工作区</span></span><br><span class="line">$ git checkout [commit] [file]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 恢复暂存区的所有文件到工作区</span></span><br><span class="line">$ git checkout .</span><br><span class="line"></span><br><span class="line"><span class="comment"># 重置暂存区的指定文件，与上一次commit保持一致，但工作区不变</span></span><br><span class="line">$ git reset [file]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 重置暂存区与工作区，与上一次commit保持一致</span></span><br><span class="line">$ git reset --hard</span><br><span class="line"></span><br><span class="line"><span class="comment"># 重置当前分支的指针为指定commit，同时重置暂存区，但工作区不变</span></span><br><span class="line">$ git reset [commit]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 重置当前分支的HEAD为指定commit，同时重置暂存区和工作区，与指定commit一致</span></span><br><span class="line">$ git reset --hard [commit]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 重置当前HEAD为指定commit，但保持暂存区和工作区不变</span></span><br><span class="line">$ git reset --keep [commit]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 新建一个commit，用来撤销指定commit</span></span><br><span class="line"><span class="comment"># 后者的所有变化都将被前者抵消，并且应用到当前分支</span></span><br><span class="line">$ git revert [commit]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 暂时将未提交的变化移除，稍后再移入</span></span><br><span class="line">$ git stash</span><br><span class="line">$ git stash pop</span><br></pre></td></tr></table></figure>
+
+<h2 id="7-标签"><a href="#7-标签" class="headerlink" title="7.标签"></a>7.标签</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 列出所有tag</span></span><br><span class="line">$ git tag</span><br><span class="line"></span><br><span class="line"><span class="comment"># 新建一个tag在当前commit</span></span><br><span class="line">$ git tag [tag]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 新建一个tag在指定commit</span></span><br><span class="line">$ git tag [tag] [commit]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 删除本地tag</span></span><br><span class="line">$ git tag -d [tag]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 删除远程tag</span></span><br><span class="line">$ git push origin :refs/tags/[tagName]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看tag信息</span></span><br><span class="line">$ git show [tag]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 提交指定tag</span></span><br><span class="line">$ git push [remote] [tag]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 提交所有tag</span></span><br><span class="line">$ git push [remote] --tags</span><br><span class="line"></span><br><span class="line"><span class="comment"># 新建一个分支，指向某个tag</span></span><br><span class="line">$ git checkout -b [branch] [tag]</span><br></pre></td></tr></table></figure>
+
+<h2 id="8-查看信息"><a href="#8-查看信息" class="headerlink" title="8. 查看信息"></a>8. 查看信息</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 显示有变更的文件</span></span><br><span class="line">$ git status</span><br><span class="line"></span><br><span class="line"><span class="comment"># 显示当前分支的版本历史</span></span><br><span class="line">$ git <span class="built_in">log</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 显示commit历史，以及每次commit发生变更的文件</span></span><br><span class="line">$ git <span class="built_in">log</span> --<span class="built_in">stat</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 搜索提交历史，根据关键词</span></span><br><span class="line">$ git <span class="built_in">log</span> -S [keyword]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 显示某个commit之后的所有变动，每个commit占据一行</span></span><br><span class="line">$ git <span class="built_in">log</span> [tag] HEAD --pretty=format:%s</span><br><span class="line"></span><br><span class="line"><span class="comment"># 显示某个commit之后的所有变动，其&quot;提交说明&quot;必须符合搜索条件</span></span><br><span class="line">$ git <span class="built_in">log</span> [tag] HEAD --grep feature</span><br><span class="line"></span><br><span class="line"><span class="comment"># 显示某个文件的版本历史，包括文件改名</span></span><br><span class="line">$ git <span class="built_in">log</span> --follow [file]</span><br><span class="line">$ git whatchanged [file]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 显示指定文件相关的每一次diff</span></span><br><span class="line">$ git <span class="built_in">log</span> -p [file]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 显示过去5次提交</span></span><br><span class="line">$ git <span class="built_in">log</span> -5 --pretty --oneline</span><br><span class="line"></span><br><span class="line"><span class="comment"># 显示所有提交过的用户，按提交次数排序</span></span><br><span class="line">$ git shortlog -sn</span><br><span class="line"></span><br><span class="line"><span class="comment"># 显示指定文件是什么人在什么时间修改过</span></span><br><span class="line">$ git blame [file]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 显示暂存区和工作区的差异</span></span><br><span class="line">$ git diff</span><br><span class="line"></span><br><span class="line"><span class="comment"># 显示暂存区和上一个commit的差异</span></span><br><span class="line">$ git diff --cached [file]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 显示工作区与当前分支最新commit之间的差异</span></span><br><span class="line">$ git diff HEAD</span><br><span class="line"></span><br><span class="line"><span class="comment"># 显示两次提交之间的差异</span></span><br><span class="line">$ git diff [first-branch]...[second-branch]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 显示今天你写了多少行代码</span></span><br><span class="line">$ git diff --shortstat <span class="string">&quot;@&#123;0 day ago&#125;&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 显示某次提交的元数据和内容变化</span></span><br><span class="line">$ git show [commit]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 显示某次提交发生变化的文件</span></span><br><span class="line">$ git show --name-only [commit]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 显示某次提交时，某个文件的内容</span></span><br><span class="line">$ git show [commit]:[filename]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 显示当前分支的最近几次提交</span></span><br><span class="line">$ git reflog</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>参考文章</p>
+</blockquote>
+<p><a href="http://www.ruanyifeng.com/blog/2015/12/git-cheat-sheet.html">常用 Git 命令清单</a></p>
+]]></content>
+      <tags>
+        <tag>git</tag>
+        <tag>git命令</tag>
+        <tag>git基础</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>IPV6基础</title>
+    <url>/2019/12/13/IPV6%E5%9F%BA%E7%A1%80/</url>
+    <content><![CDATA[<blockquote class="blockquote-center">介绍IPV6基础知识,以及在NETCore项目应用</blockquote>
+
+<span id="more"></span>
+
+<h1 id="IPV6诞生"><a href="#IPV6诞生" class="headerlink" title="IPV6诞生"></a>IPV6诞生</h1><p>主要原因是为了解决IPV4地址枯竭,(虽然NAT等技术有助于延迟但是并不可避免)解决了端到端IP连接、服务质量（QoS）、安全性、多播、移动性、即插即用等上一代存在的问题。</p>
+<div style="float:right;border:solid 1px 000;margin:2px;"><img src="/2019/12/13/IPV6%E5%9F%BA%E7%A1%80/rir-map.svg" class=""></div>
+
+<p>ICANN</p>
+<ul>
+<li><p>InterNIC 网络信息中心（NIC），也被称为InterNIC成立于1972年,从1993年到1998年，是该组织主要负责域名系统（DNS）域名分配和X.500目录服务。1997年12月1日</p>
+</li>
+<li><p>IANA</p>
+</li>
+<li><p>ICANN 互联网名称与数字地址分配机构 1998年10月在加利福尼亚州的玛丽娜德尔雷伊成立 1999年1月1日上午12:01</p>
+</li>
+<li><p>2011年2月3日，互联网名称与数字地址分配机构（ICANN）宣布，已将其剩余的最后一批IPv4地址分发给全球五个地区互联网注册机构</p>
+</li>
+<li><p>所有的IP地址都由国际组织InterNIC（Network Information Center）负责统一分配</p>
+</li>
+<li><p>ARIN（American Registry for Internet Numbers）加拿大，美国和一些加勒比海群岛</p>
+</li>
+<li><p>RIPE NCC（Reseaux IP Europeens）欧洲，中东和中亚</p>
+</li>
+<li><p>APNIC（Asia Pacific Network Information Center）亚太地区</p>
+</li>
+<li><p>LACNIC（Lation American and Caribbean Internet Address Registry）拉丁美洲和一些加勒比群岛</p>
+</li>
+<li><p>AFRINIC（African Network Information Centre）非洲地区</p>
+</li>
+</ul>
+<p><a href="https://www.arin.net/resources/guide/ipv4/">ARIN 2015年9月24日 IP地址耗尽</a></p>
+]]></content>
+      <tags>
+        <tag>IPV6</tag>
+        <tag>NETCore</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>docker部署gitlab集成自动化构建</title>
+    <url>/2020/01/13/docker%E9%83%A8%E7%BD%B2gitlab%E9%9B%86%E6%88%90%E8%87%AA%E5%8A%A8%E5%8C%96%E6%9E%84%E5%BB%BA/</url>
+    <content><![CDATA[<blockquote class="blockquote-center">使用gitlab搭建内网代码仓库</blockquote>
+
+<span id="more"></span>
+
+<div class="note info"><h1 id="一、认识Gitlab"><a href="#一、认识Gitlab" class="headerlink" title="一、认识Gitlab"></a>一、认识Gitlab</h1></div>
+
+<p>GitLab 是一个用于仓库管理系统的开源项目，使用Git作为代码管理工具，并在此基础上搭建起来的Web服务,和github是一样的，不过我们可以将它部署在内网，放自己私有项目</p>
+<div class="note info"><h1 id="二、Docker安装Gitlab"><a href="#二、Docker安装Gitlab" class="headerlink" title="二、Docker安装Gitlab"></a>二、Docker安装Gitlab</h1></div>
+
+<h2 id="下载gitlab镜像"><a href="#下载gitlab镜像" class="headerlink" title="下载gitlab镜像"></a>下载gitlab镜像</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 最新版</span></span><br><span class="line">docker pull gitlab/gitlab-ce:latest</span><br><span class="line"><span class="comment"># 指定版本，因为我要恢复之前数据，就不下最新版了（恢复数据要保证版本一致）</span></span><br><span class="line">docker pull gitlab/gitlab-ce:11.4.5-ce.0</span><br></pre></td></tr></table></figure>
+
+<h2 id="启动容器"><a href="#启动容器" class="headerlink" title="启动容器"></a>启动容器</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">docker run -d \ </span><br><span class="line">           -p 8090:80 \ </span><br><span class="line">           -p 8443:443 \ </span><br><span class="line">           --name gitlab \ </span><br><span class="line">           --restart always \ </span><br><span class="line">           -v /opt/gitlab/data/:/var/opt/gitlab \ </span><br><span class="line">           -v /opt/gitlab/log/:/var/log/gitlab \ </span><br><span class="line">           -v /opt/gitlab/etc/:/etc/gitlab \ </span><br><span class="line">           gitlab/gitlab-ce:11.4.5-ce.0</span><br></pre></td></tr></table></figure>
+
+<h2 id="配置gitlab"><a href="#配置gitlab" class="headerlink" title="配置gitlab"></a>配置gitlab</h2><p>1、先把gitlab停掉（很重要，不然改gitlab.yml不生效）</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">docker <span class="built_in">exec</span> -it gitlab /bin/bash</span><br><span class="line">gitlab-ctl stop</span><br><span class="line"><span class="built_in">exit</span></span><br></pre></td></tr></table></figure>
+
+<p>2、修改访问gitlab地址</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">vim /opt/gitlab/etc/gitlab.rb</span><br><span class="line"></span><br><span class="line"><span class="comment"># external_url改成部署机器的域名或者IP地址</span></span><br><span class="line">external_url <span class="string">&#x27;http://主机IP&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p>3、修改&#x2F;opt&#x2F;gitlab&#x2F;data&#x2F;gitlab-rails&#x2F;etc&#x2F;gitlab.yml</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">vim /opt/gitlab/data/gitlab-rails/etc/gitlab.yml</span><br></pre></td></tr></table></figure>
+
+<p>找到<code>GitLab settings</code>如下图<code>1-1</code><br>这里就是GitLab<code>克隆地址</code><br>修改host和port为外部主机的IP和映射的8090端口，不然项目默认80端口，我们主机80端口是访问不到的</p>
+<img src="/2020/01/13/docker%E9%83%A8%E7%BD%B2gitlab%E9%9B%86%E6%88%90%E8%87%AA%E5%8A%A8%E5%8C%96%E6%9E%84%E5%BB%BA/GitLabWebServerSettings.png" class="" title="1-1">
+
+<p>4、重启gitlab</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">docker <span class="built_in">exec</span> -it gitlab /bin/bash</span><br><span class="line"></span><br><span class="line">gitlab-ctl reconfigure</span><br><span class="line"></span><br><span class="line">gitlab-ctl restart</span><br></pre></td></tr></table></figure>
+
+<p>打开浏览器，输入本机的ip地址就能访问了</p>
+<div class="note info"><h1 id="三、备份、恢复Gitlab"><a href="#三、备份、恢复Gitlab" class="headerlink" title="三、备份、恢复Gitlab"></a>三、备份、恢复Gitlab</h1></div>
+
+<h2 id="备份"><a href="#备份" class="headerlink" title="备份"></a>备份</h2><p>1、查看备份路径</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 默认路径，主机外部的映射路径是/opt/gitlab/etc/gitlab.rb</span></span><br><span class="line">vim /etc/gitlab/gitlab.rb</span><br><span class="line"></span><br><span class="line"><span class="comment"># 路径</span></span><br><span class="line">gitlab_rails[<span class="string">&#x27;backup_path&#x27;</span>] = <span class="string">&quot;/var/opt/gitlab/backups&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>2、创建备份</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">docker <span class="built_in">exec</span> -it gitlab /bin/bash</span><br><span class="line"></span><br><span class="line">/opt/gitlab/bin/gitlab-rake gitlab:backup:create</span><br></pre></td></tr></table></figure>
+<p>3、恢复备份</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 复制文件到 backups</span></span><br><span class="line"><span class="built_in">mv</span> 1576721744_2019_12_18_11.4.5_gitlab_backup.tar /opt/gitlab/data/backups</span><br><span class="line"><span class="comment"># 修改权限</span></span><br><span class="line"><span class="built_in">chmod</span> 777 1530773117_2018_07_05_gitlab_backup.tar</span><br><span class="line"><span class="comment"># 进入容器</span></span><br><span class="line">docker <span class="built_in">exec</span> -it gitlab /bin/bash</span><br><span class="line"><span class="comment"># 停掉数据连接服务</span></span><br><span class="line">gitlab-ctl stop unicorn</span><br><span class="line">gitlab-ctl stop sidekiq</span><br><span class="line"><span class="comment"># 恢复然后两次yes</span></span><br><span class="line">gitlab-rake gitlab:backup:restore BACKUP=1530773117_2018_07_05_gitlab_backup.tar</span><br><span class="line"><span class="comment"># 重启</span></span><br><span class="line">gitlab-ctl restart</span><br></pre></td></tr></table></figure>
+<p>PS:根据版本不同恢复时可能有点小区别<br>可能不加<code>_gitlab_backup.tar</code>后缀，具体可以看报错信息</p>
+<p><strong>注意：通过备份文件恢复gitlab必须保证gitlab版本一致</strong></p>
+<div class="note info"><h1 id="三、gitlab-runner实现自动化构建"><a href="#三、gitlab-runner实现自动化构建" class="headerlink" title="三、gitlab-runner实现自动化构建"></a>三、gitlab-runner实现自动化构建</h1></div>
+
+<h2 id="docker安装gitlab-runner"><a href="#docker安装gitlab-runner" class="headerlink" title="docker安装gitlab-runner"></a>docker安装gitlab-runner</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 拉取</span></span><br><span class="line">docker pull gitlab/gitlab-runner</span><br><span class="line"><span class="comment"># 启动</span></span><br><span class="line"><span class="built_in">mkdir</span> -p /opt/gitlab-runner/config</span><br><span class="line">docker run -d \ </span><br><span class="line">           --name gitlab-runner \ </span><br><span class="line">           --restart always \ </span><br><span class="line">           -v /opt/gitlab-runner/config:/etc/gitlab-runner \ </span><br><span class="line">           -v /var/run/docker.sock:/var/run/docker.sock \ </span><br><span class="line">           gitlab/gitlab-runner:latest</span><br></pre></td></tr></table></figure>
+<h2 id="注册gitlab-runner"><a href="#注册gitlab-runner" class="headerlink" title="注册gitlab-runner"></a>注册gitlab-runner</h2><p>1、注册</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">gitlab-runner register</span><br><span class="line"><span class="comment"># 按照顺序输入</span></span><br><span class="line"><span class="comment"># gitlab地址</span></span><br><span class="line"><span class="comment"># gitlab token</span></span><br><span class="line"><span class="comment"># runner说明</span></span><br><span class="line"><span class="comment"># 设置tag，构建文件可以通过tag指定触发runner</span></span><br><span class="line"><span class="comment"># true，是否接受未指定tag的任务</span></span><br><span class="line"><span class="comment"># false，是否锁定这个runner</span></span><br><span class="line"><span class="comment"># 选择runner执行器这里我们选择docker</span></span><br><span class="line"><span class="comment"># 使用构建的镜像这里我们要去构建文档项目使用node:10.15.0</span></span><br></pre></td></tr></table></figure>
+<p>gitlab地址和token可以在<code>设置</code>–&gt;<code>runner</code>找到，如下图1-2</p>
+<img src="/2020/01/13/docker%E9%83%A8%E7%BD%B2gitlab%E9%9B%86%E6%88%90%E8%87%AA%E5%8A%A8%E5%8C%96%E6%9E%84%E5%BB%BA/gitlab-runnersetting.png" class="" title="1-2">
+
+<p>2、配置<br>配置&#x2F;opt&#x2F;gitlab-runner&#x2F;config&#x2F;config.toml文件<br><a href="https://docs.gitlab.com/runner/configuration/advanced-configuration.html#the-runnersdocker-section">runner配置文档</a></p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">vim /opt/gitlab-runner/config/config.toml</span><br><span class="line"><span class="comment"># 目前只修改一个挂载目录，用于把构建的文件拿出来，主机要有app文件夹</span></span><br><span class="line"><span class="comment"># volumes 加一个 &quot;/home/app:/mnt/&quot;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="配置一个gitlab构建"><a href="#配置一个gitlab构建" class="headerlink" title="配置一个gitlab构建"></a>配置一个gitlab构建</h2><p>1、项目下新建一个<code>.gitlab-ci.yml</code>文件</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 写入以下内容</span></span><br><span class="line">pages:</span><br><span class="line">  script:</span><br><span class="line">  - <span class="built_in">echo</span> <span class="string">&quot;开始构建文档&quot;</span> </span><br><span class="line">  - <span class="built_in">touch</span> /mnt/test.txt</span><br><span class="line">  only:</span><br><span class="line">    - master</span><br><span class="line">  tags:</span><br><span class="line">   - runner1</span><br></pre></td></tr></table></figure>
+
+<p>2、上传一个文件，等待构建完成</p>
+<p>3、查看主机映射的文件夹有没有test.txt文件，有证明构建是没有问题的，可以根据自己的项目编写构建文件</p>
+]]></content>
+      <tags>
+        <tag>Docker</tag>
+        <tag>Linux</tag>
+        <tag>运维</tag>
+        <tag>gitlab</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>离线部署PM2</title>
+    <url>/2020/12/03/%E7%A6%BB%E7%BA%BF%E9%83%A8%E7%BD%B2PM2/</url>
+    <content><![CDATA[<blockquote class="blockquote-center">离线安装PM2管理项目</blockquote>
+
+<span id="more"></span>
+
+<h1 id="一丶安装Node"><a href="#一丶安装Node" class="headerlink" title="一丶安装Node"></a>一丶安装Node</h1><ol>
+<li>先到官网下载二进制包地址：<a href="https://nodejs.org/en/download/">https://nodejs.org/en/download/</a></li>
+</ol>
+<p><img src="/2020/12/03/%E7%A6%BB%E7%BA%BF%E9%83%A8%E7%BD%B2PM2/image-20201203173545961.png" alt="Node下载地址"><br>2. 上传到服务器，解压(我上传到&#x2F;usr&#x2F;local&#x2F;下，这个可以自行选择)</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">tar -Jxvf node-v14.15.1-linux-x64.tar.xz</span><br><span class="line"><span class="comment"># 重命名</span></span><br><span class="line"><span class="built_in">mv</span> node-v14.15.1-linux-x64 nodejs</span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li>建立软连接</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">ln</span> -s /usr/local/nodejs/bin/npm /usr/local/bin/</span><br><span class="line"><span class="built_in">ln</span> -s /usr/local/nodejs/bin/node /usr/local/bin/</span><br></pre></td></tr></table></figure>
+
+<ol start="4">
+<li>测试是否安装成功</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">node -v</span><br></pre></td></tr></table></figure>
+
+<h1 id="二、安装PM2"><a href="#二、安装PM2" class="headerlink" title="二、安装PM2"></a>二、安装PM2</h1><ol>
+<li>先到github下载：<a href="https://github.com/Unitech/pm2/tags">https://github.com/Unitech/pm2/tags</a></li>
+</ol>
+<p><img src="/2020/12/03/%E7%A6%BB%E7%BA%BF%E9%83%A8%E7%BD%B2PM2/image-20201203174942356.png" alt="PM2下载地址"></p>
+<ol start="2">
+<li>上传到服务器，解压(我上传到&#x2F;usr&#x2F;local&#x2F;下，这个可以自行选择)</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">tar -zxvf pm2-4.5.0.tar.gz</span><br><span class="line"><span class="comment"># 改名</span></span><br><span class="line"><span class="built_in">mv</span> pm2-4.5.0 pm2</span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li>添加软连接</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ln -s /usr/local/pm2/bin/pm2 /usr/local/bin/</span><br></pre></td></tr></table></figure>
+
+<ol start="4">
+<li>测试安装</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">pm2 <span class="built_in">ls</span></span><br></pre></td></tr></table></figure>
+
+<h1 id="三、整合安装"><a href="#三、整合安装" class="headerlink" title="三、整合安装"></a>三、整合安装</h1><p>上面的方法繁琐，还有可能出现问题。所以我们可以制作一个包含pm2的nodejs包。步骤如下：</p>
+<ul>
+<li>在一台可以联网的电脑上使用第一步安装nodejs</li>
+<li>执行<code>npm install pm2 -g</code></li>
+<li>将整个nodejs文件夹打包<code>tar -zcvf nodejs.tar.gz nodejs</code></li>
+</ul>
+<p>提供我打包好的安装包（node版本为14.15.1）</p>
+<blockquote>
+<p><a href="https://wws.lanzous.com/ixEZ1j0jz1e">https://wws.lanzous.com/ixEZ1j0jz1e</a><br>密码:2hxq</p>
+</blockquote>
+<p>当我们拿到安装包后执行下面的操作</p>
+<ol>
+<li>解压</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">tar -zxvf node-v14.15.1.tar.gz</span><br><span class="line"><span class="built_in">mv</span> node-v14.15.1 nodejs</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>建立软连接</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">ln</span> -s /usr/local/nodejs/bin/npm /usr/local/bin/</span><br><span class="line"><span class="built_in">ln</span> -s /usr/local/nodejs/bin/node /usr/local/bin/</span><br><span class="line"><span class="built_in">ln</span> -s /usr/local/nodejs/lib/node_modules/pm2/bin/pm2 /usr/local/bin/</span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li>测试安装</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">node -v</span><br><span class="line">pm2 <span class="built_in">ls</span></span><br></pre></td></tr></table></figure>
+
+<p>分别输出下面两个内容代表安装成功</p>
+<p><img src="/2020/12/03/%E7%A6%BB%E7%BA%BF%E9%83%A8%E7%BD%B2PM2/image-20201203180642393.png" alt="node成功输出"></p>
+<p><img src="/2020/12/03/%E7%A6%BB%E7%BA%BF%E9%83%A8%E7%BD%B2PM2/image-20201203180702553.png" alt="pm2成功输出"></p>
+<h1 id="四、常用命令"><a href="#四、常用命令" class="headerlink" title="四、常用命令"></a>四、常用命令</h1><table>
+<thead>
+<tr>
+<th align="left">命令</th>
+<th align="left">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">pm2 startup</td>
+<td align="left">设置pm2开机自启动</td>
+</tr>
+<tr>
+<td align="left">pm2 unstartup</td>
+<td align="left">移除pm2开机自启动</td>
+</tr>
+<tr>
+<td align="left">pm2 save</td>
+<td align="left">保存当前进程开机自启动</td>
+</tr>
+<tr>
+<td align="left">pm2 start &lt;进程启动命令&gt; [–name &lt;进程名&gt;]</td>
+<td align="left">启动应用程序</td>
+</tr>
+<tr>
+<td align="left">pm2 list</td>
+<td align="left">显示所有进程状态</td>
+</tr>
+<tr>
+<td align="left">pm2 monit</td>
+<td align="left">监控进程</td>
+</tr>
+<tr>
+<td align="left">pm2 logs [进程id或名字]</td>
+<td align="left">显示进程日志</td>
+</tr>
+<tr>
+<td align="left">pm2 stop [all]</td>
+<td align="left">停止[所有]进程</td>
+</tr>
+<tr>
+<td align="left">pm2 restart [all]</td>
+<td align="left">重启[所有]进程</td>
+</tr>
+<tr>
+<td align="left">pm2 delete [&lt;进程名或者id&gt;,all]</td>
+<td align="left">删除指定[所有]进程</td>
+</tr>
+<tr>
+<td align="left">pm2 info [进程id或名字]</td>
+<td align="left">查看应用程序信息</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>配置文件</p>
+</blockquote>
+<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;apps&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;BaoWu&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;script&quot;</span><span class="punctuation">:</span> <span class="string">&quot;/usr/bin/java&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;watch&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">true</span></span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;ignore-watch&quot;</span><span class="punctuation">:</span><span class="punctuation">[</span></span><br><span class="line">            <span class="string">&quot;wwwroot&quot;</span></span><br><span class="line">        <span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;args&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">            <span class="string">&quot;-jar&quot;</span><span class="punctuation">,</span></span><br><span class="line">            <span class="string">&quot;/home/visible/Project/BaoWu/baowu-zwt.jar&quot;</span></span><br><span class="line">        <span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;exec_interpreter&quot;</span><span class="punctuation">:</span> <span class="string">&quot;&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;out_file&quot;</span><span class="punctuation">:</span> <span class="string">&quot;/dev/null&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;error_file&quot;</span><span class="punctuation">:</span> <span class="string">&quot;/dev/null&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;exec_mode&quot;</span><span class="punctuation">:</span> <span class="string">&quot;fork&quot;</span></span><br><span class="line">    <span class="punctuation">&#125;</span><span class="punctuation">,</span><span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;CloudWatchUniversal&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;script&quot;</span><span class="punctuation">:</span> <span class="string">&quot;/usr/bin/java&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;watch&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">true</span></span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;ignore-watch&quot;</span><span class="punctuation">:</span><span class="punctuation">[</span></span><br><span class="line">            <span class="string">&quot;wwwroot&quot;</span></span><br><span class="line">        <span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;args&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">            <span class="string">&quot;-jar&quot;</span><span class="punctuation">,</span></span><br><span class="line">            <span class="string">&quot;/home/visible/Project/universalCloudWatch/cloudwatch-universal-1.0-SNAPSHOT.jar&quot;</span></span><br><span class="line">        <span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;exec_interpreter&quot;</span><span class="punctuation">:</span> <span class="string">&quot;&quot;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="attr">&quot;exec_mode&quot;</span><span class="punctuation">:</span> <span class="string">&quot;fork&quot;</span></span><br><span class="line">    <span class="punctuation">&#125;</span><span class="punctuation">]</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+]]></content>
+      <tags>
+        <tag>Linux</tag>
+        <tag>PM2</tag>
+        <tag>Node</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Nginx代理Kafka</title>
+    <url>/2020/09/15/Nginx%E4%BB%A3%E7%90%86Kafka/</url>
+    <content><![CDATA[<blockquote class="blockquote-center">Nginx代理Kafka</blockquote>
+
+<span id="more"></span>
+
+<div class="note info"><h1 id="一、第一种方式：ngx-kafka-module"><a href="#一、第一种方式：ngx-kafka-module" class="headerlink" title="一、第一种方式：ngx_kafka_module"></a>一、第一种方式：ngx_kafka_module</h1></div>
+
+
+<p>这种方式主要是能够通过http给kafka发送消息</p>
+<h2 id="安装依赖"><a href="#安装依赖" class="headerlink" title="安装依赖"></a>安装依赖</h2><ul>
+<li><a href="https://github.com/edenhill/librdkafka">librdkafka</a></li>
+</ul>
+<h3 id="在线安装"><a href="#在线安装" class="headerlink" title="在线安装"></a>在线安装</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># Mac OSX</span></span><br><span class="line">brew install librdkafka</span><br><span class="line"><span class="comment"># Debian和Ubuntu</span></span><br><span class="line">apt install librdkafka-dev</span><br><span class="line"><span class="comment"># RedHat，CentOS，Fedora</span></span><br><span class="line">yum install librdkafka-devel</span><br></pre></td></tr></table></figure>
+
+<h3 id="离线安装"><a href="#离线安装" class="headerlink" title="离线安装"></a>离线安装</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 下载源码包并上传</span></span><br><span class="line">https://github.com/edenhill/librdkafka/releases</span><br><span class="line"></span><br><span class="line"><span class="comment"># 解压进入目录</span></span><br><span class="line">tar -zxvf librdkafka-1.5.0.tar.gz</span><br><span class="line"><span class="built_in">cd</span> librdkafka-1.5.0</span><br><span class="line"></span><br><span class="line"><span class="comment"># 编译安装</span></span><br><span class="line"><span class="comment"># 可通过--prefix=/home/librdkafka指定目录）</span></span><br><span class="line"><span class="comment"># 默认在</span></span><br><span class="line">./configure</span><br><span class="line"> make &amp;&amp; make install</span><br></pre></td></tr></table></figure>
+
+<h2 id="配置链接库"><a href="#配置链接库" class="headerlink" title="配置链接库"></a>配置链接库</h2><p><strong>在线安装不需要这一步</strong></p>
+<p> make &amp;&amp; make install默认是把动态库安装到&#x2F;usr&#x2F;local&#x2F;lib下的，所以在Linux的默认共享库路径&#x2F;lib和&#x2F;usr&#x2F;lib下找不到。因此添加的library如果不在&#x2F;lib和&#x2F;usr&#x2F;lib里面的话，就需要往&#x2F;etc&#x2F;ld.so.conf文件追加library所在的路径，然后重新调用下ldconfig命令即可。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">echo</span> <span class="string">&quot;/usr/local/lib&quot;</span> &gt;&gt; /etc/ld.so.conf</span><br><span class="line">ldconfig</span><br></pre></td></tr></table></figure>
+
+
+<h2 id="安装Nginx并添加ngx-kafka-module模块"><a href="#安装Nginx并添加ngx-kafka-module模块" class="headerlink" title="安装Nginx并添加ngx_kafka_module模块"></a>安装Nginx并添加ngx_kafka_module模块</h2><h3 id="先克隆源码"><a href="#先克隆源码" class="headerlink" title="先克隆源码"></a>先克隆源码</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 放在/usr/local/src一会编译nginx会用到</span></span><br><span class="line"><span class="built_in">cd</span> /usr/local/src</span><br><span class="line">git <span class="built_in">clone</span> https://github.com/brg-liuwei/ngx_kafka_module</span><br></pre></td></tr></table></figure>
+
+<h3 id="安装Nginx"><a href="#安装Nginx" class="headerlink" title="安装Nginx"></a>安装Nginx</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 下载</span></span><br><span class="line">yum -y install gcc zlib zlib-devel pcre-devel openssl openssl-devel</span><br><span class="line"><span class="built_in">mkdir</span> /usr/local/nginx</span><br><span class="line"><span class="built_in">mkdir</span> /home/nginx</span><br><span class="line"><span class="built_in">cd</span> /home/nginx</span><br><span class="line">wget -c http://nginx.org/download/nginx-1.16.1.tar.gz</span><br><span class="line">tar -zxvf nginx-1.16.1.tar.gz</span><br><span class="line"><span class="built_in">cd</span> nginx-1.16.1</span><br><span class="line"></span><br><span class="line"><span class="comment"># 编译安装</span></span><br><span class="line">./configure --prefix=/usr/local/nginx --with-http_ssl_module --add-dynamic=/usr/local/src/ngx_kafka_module</span><br><span class="line"></span><br><span class="line">make &amp;&amp; make install</span><br><span class="line"></span><br><span class="line"><span class="comment"># 启动</span></span><br><span class="line">/usr/local/nginx/sbin/nginx</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 如果报错请看下一步 复制objs/ngx_http_kafka_module.so</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="复制objs-ngx-http-kafka-module-so"><a href="#复制objs-ngx-http-kafka-module-so" class="headerlink" title="复制objs&#x2F;ngx_http_kafka_module.so"></a>复制objs&#x2F;ngx_http_kafka_module.so</h3><blockquote>
+<p>上一步报错才需要执行复制操作<br>可以先查看&#x2F;usr&#x2F;local&#x2F;nginx&#x2F;modules 是否存在模块，不存在再复制<br>为现有nginx添加模块时，module不会自动创建并复制模块</p>
+</blockquote>
+<p>配置完kafka启动nginx时发现找不到ngx_http_kafka_module.so，所以我们手动复制一下</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">mkdir</span> /usr/local/nginx/modules</span><br><span class="line"></span><br><span class="line">\<span class="built_in">cp</span> ./objs/ngx_http_kafka_module.so /usr/local/nginx/modules</span><br></pre></td></tr></table></figure>
+
+<h3 id="Kafka的Nginx配置"><a href="#Kafka的Nginx配置" class="headerlink" title="Kafka的Nginx配置"></a>Kafka的Nginx配置</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">worker_processes  1;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 动态安装的模块需要引入</span></span><br><span class="line">load_module <span class="string">&quot;modules/ngx_http_kafka_module.so&quot;</span>;</span><br><span class="line"></span><br><span class="line">events &#123;</span><br><span class="line">    worker_connections  1024;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">http &#123;</span><br><span class="line">    include       mime.types;</span><br><span class="line">    default_type  application/octet-stream;</span><br><span class="line">    sendfile        on;</span><br><span class="line">    keepalive_timeout  65;</span><br><span class="line"></span><br><span class="line">    kafka;</span><br><span class="line">    kafka_broker_list 192.168.1.140:9092;</span><br><span class="line"></span><br><span class="line">    server &#123;</span><br><span class="line">        listen       9032;</span><br><span class="line">        server_name  192.168.1.140;</span><br><span class="line">        location = /kafka/server-per-final &#123;</span><br><span class="line">                kafka_topic server-per-final;</span><br><span class="line">        &#125;</span><br><span class="line">        error_page   500 502 503 504  /50x.html;</span><br><span class="line">        location = /50x.html &#123;</span><br><span class="line">            root   html;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<div class="note info"><h1 id="二、第二种方式：配置stream模块"><a href="#二、第二种方式：配置stream模块" class="headerlink" title="二、第二种方式：配置stream模块"></a>二、第二种方式：配置stream模块</h1></div>
+
+
+<p>这种方式主要实现整个kafka消息的代理转发，我们此次项目就使用这种方式</p>
+<h2 id="安装Nginx-1"><a href="#安装Nginx-1" class="headerlink" title="安装Nginx"></a>安装Nginx</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 安装</span></span><br><span class="line">yum -y install gcc zlib zlib-devel pcre-devel openssl openssl-devel</span><br><span class="line"><span class="built_in">mkdir</span> /usr/local/nginx</span><br><span class="line"><span class="built_in">mkdir</span> /home/nginx</span><br><span class="line"><span class="built_in">cd</span> /home/nginx</span><br><span class="line">wget -c http://nginx.org/download/nginx-1.16.1.tar.gz</span><br><span class="line">tar -zxvf nginx-1.16.1.tar.gz</span><br><span class="line"><span class="built_in">cd</span> nginx-1.16.1</span><br><span class="line"></span><br><span class="line">./configure --prefix=/usr/local/nginx --with-http_ssl_module --with-stream</span><br><span class="line">make &amp;&amp; make install</span><br><span class="line"></span><br><span class="line"><span class="comment"># 启动</span></span><br><span class="line">/usr/local/nginx/sbin/nginx</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h2 id="Kafka的Nginx配置-1"><a href="#Kafka的Nginx配置-1" class="headerlink" title="Kafka的Nginx配置"></a>Kafka的Nginx配置</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">stream &#123;</span><br><span class="line">    upstream kafka &#123;</span><br><span class="line">        server 192.168.1.140:9092 weight=1;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    server &#123;</span><br><span class="line">        listen 9032;</span><br><span class="line">        proxy_connect_timeout 1s;</span><br><span class="line">        proxy_timeout 6s;</span><br><span class="line">        proxy_pass kafka;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>]]></content>
+      <tags>
+        <tag>Nginx</tag>
+        <tag>Kafka</tag>
+        <tag>Nginx代理Kafka</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Nginx添加模块</title>
+    <url>/2020/09/16/Nginx%E6%B7%BB%E5%8A%A0%E6%A8%A1%E5%9D%97/</url>
+    <content><![CDATA[<blockquote class="blockquote-center">Nginx添加模块</blockquote>
+
+<span id="more"></span>
+<div class="note info"><h1 id="一、查看之前安装的参数"><a href="#一、查看之前安装的参数" class="headerlink" title="一、查看之前安装的参数"></a>一、查看之前安装的参数</h1></div>
+
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ /usr/local/nginx/sbin/nginx -V</span><br><span class="line"></span><br><span class="line">nginx version: nginx/1.16.1</span><br><span class="line">built by gcc 4.8.5 20150623 (Red Hat 4.8.5-39) (GCC)</span><br><span class="line">built with OpenSSL 1.0.2k-fips  26 Jan 2017</span><br><span class="line">TLS SNI support enabled</span><br><span class="line">configure arguments: --prefix=/usr/local/nginx --with-http_ssl_module</span><br><span class="line"></span><br><span class="line"><span class="comment"># 可以看到最后一行显示之前安装的依赖`--with-http_ssl_module` 记住这一行重新编译nginx的时候会用到</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<div class="note info"><h1 id="二、重新安装"><a href="#二、重新安装" class="headerlink" title="二、重新安装"></a>二、重新安装</h1></div>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 进入到nginx之前安装的目录/home/nginx-1.16.1</span></span><br><span class="line"><span class="comment"># 之前的找不到了可以重新下载一个同样版本的</span></span><br><span class="line"><span class="comment"># 可以看到我们此次新增了/usr/local/src/ngx_kafka_module模块</span></span><br><span class="line"><span class="comment"># –add-module=或者--add-dynamic-module</span></span><br><span class="line"><span class="comment"># 一个添加动态模块一个是正常添加模块</span></span><br><span class="line"> <span class="built_in">cd</span> /home/nginx-1.16.1</span><br><span class="line">./configure --prefix=/usr/local/nginx --with-http_ssl_module --add-dynamic-module=/usr/local/src/ngx_kafka_module</span><br><span class="line"></span><br><span class="line"><span class="comment"># 千万不要：make install</span></span><br><span class="line">make</span><br></pre></td></tr></table></figure>
+
+<div class="note info"><h1 id="三、替换Nginx"><a href="#三、替换Nginx" class="headerlink" title="三、替换Nginx"></a>三、替换Nginx</h1></div>
+
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 停止、备份、覆盖</span></span><br><span class="line">/usr/local/nginx/sbin/nginx -s stop</span><br><span class="line">\<span class="built_in">cp</span> /usr/local/nginx/sbin/nginx /usr/local/nginx/sbin/nginx.bak</span><br><span class="line">\<span class="built_in">cp</span> ./objs/nginx /usr/local/nginx/sbin/</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看信息</span></span><br><span class="line">/usr/local/nginx/sbin/nginx -V</span><br><span class="line"></span><br><span class="line">nginx version: nginx/1.16.1</span><br><span class="line">built by gcc 4.8.5 20150623 (Red Hat 4.8.5-39) (GCC)</span><br><span class="line">built with OpenSSL 1.0.2k-fips  26 Jan 2017</span><br><span class="line">TLS SNI support enabled</span><br><span class="line">configure arguments: --prefix=/usr/local/nginx --with-http_ssl_module --add-dynamic-module=/usr/local/src/ngx_kafka_module</span><br><span class="line"></span><br><span class="line"><span class="comment"># 启动</span></span><br><span class="line">/usr/local/nginx/sbin/nginx</span><br></pre></td></tr></table></figure>]]></content>
+      <tags>
+        <tag>Nginx添加模块</tag>
+        <tag>Nginx-Module</tag>
+      </tags>
+  </entry>
+</search>
