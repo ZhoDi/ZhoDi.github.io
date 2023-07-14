@@ -90,9 +90,9 @@
     
     
     
-    <category term="Docker" scheme="https://www.zhaodi.top/tags/Docker/"/>
-    
     <category term="Linux" scheme="https://www.zhaodi.top/tags/Linux/"/>
+    
+    <category term="Docker" scheme="https://www.zhaodi.top/tags/Docker/"/>
     
     <category term="运维" scheme="https://www.zhaodi.top/tags/%E8%BF%90%E7%BB%B4/"/>
     
@@ -199,9 +199,9 @@
     
     
     
-    <category term="Mariadb" scheme="https://www.zhaodi.top/tags/Mariadb/"/>
-    
     <category term="Linux" scheme="https://www.zhaodi.top/tags/Linux/"/>
+    
+    <category term="Mariadb" scheme="https://www.zhaodi.top/tags/Mariadb/"/>
     
     <category term="安装Mariadb" scheme="https://www.zhaodi.top/tags/%E5%AE%89%E8%A3%85Mariadb/"/>
     
@@ -222,11 +222,11 @@
     
     
     
+    <category term="Linux" scheme="https://www.zhaodi.top/tags/Linux/"/>
+    
     <category term="Docker" scheme="https://www.zhaodi.top/tags/Docker/"/>
     
     <category term="Mariadb" scheme="https://www.zhaodi.top/tags/Mariadb/"/>
-    
-    <category term="Linux" scheme="https://www.zhaodi.top/tags/Linux/"/>
     
     <category term="Docker集群部署Mariadb" scheme="https://www.zhaodi.top/tags/Docker%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2Mariadb/"/>
     
@@ -270,9 +270,9 @@
     
     
     
-    <category term="Docker" scheme="https://www.zhaodi.top/tags/Docker/"/>
-    
     <category term="Linux" scheme="https://www.zhaodi.top/tags/Linux/"/>
+    
+    <category term="Docker" scheme="https://www.zhaodi.top/tags/Docker/"/>
     
     <category term="运维" scheme="https://www.zhaodi.top/tags/%E8%BF%90%E7%BB%B4/"/>
     
